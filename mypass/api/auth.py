@@ -16,7 +16,7 @@ def signup():
     }, 201
 
 
-@AuthApi.route('/api/refresh_token', methods=['POST'])
+@AuthApi.route('/api/auth/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def get_login():
     pw = get_jwt_identity()
