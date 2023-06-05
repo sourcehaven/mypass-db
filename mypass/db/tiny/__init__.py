@@ -1,2 +1,2 @@
-from ._db import tinydb
-from .delete import delete_db
+from ._db import tinydb, unlink as unlink_db
+from ._table import TinyTable
