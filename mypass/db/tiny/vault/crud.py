@@ -40,8 +40,8 @@ def read(cond: QueryLike = None):
 
 
 def update(
-        cond: QueryLike | None = None,
-        doc_ids: Iterable[int] | None = None,
+        cond: QueryLike = None,
+        doc_ids: Iterable[int] = None,
         *,
         password: str = None,
         salt: str = None,
@@ -68,6 +68,6 @@ def update(
         return t.update(fields=d, cond=cond, doc_ids=doc_ids)
 
 
-def delete(cond: QueryLike | None = None, doc_ids: Iterable[int] | None = None):
+def delete(cond: QueryLike = None, doc_ids: Iterable[int] = None):
     with vault() as t:
         return t.remove(cond=cond, doc_ids=doc_ids)
