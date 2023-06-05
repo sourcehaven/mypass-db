@@ -1,7 +1,7 @@
-from flask import Blueprint, request
+from flask import request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 
-AuthApi = Blueprint('auth', __name__)
+from . import AuthApi
 
 _blacklist = set()
 

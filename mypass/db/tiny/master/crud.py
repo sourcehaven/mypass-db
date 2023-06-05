@@ -3,9 +3,9 @@ from tinydb.queries import QueryLike
 from. import master
 
 
-def create(password: str, salt: str):
+def create(pw: str, salt: str):
     with master() as t:
-        return t.insert({'password': password, 'salt': salt})
+        return t.insert({'pw': pw, 'salt': salt})
 
 
 def read(cond: QueryLike = None):
@@ -15,9 +15,9 @@ def read(cond: QueryLike = None):
         return t.search(cond=cond)
 
 
-def update(password: str, salt: str):
+def update(pw: str, salt: str):
     with master() as t:
-        return t.update(fields={'password': password, 'salt': salt})
+        return t.update(fields={'pw': pw, 'salt': salt})
 
 
 def delete():
