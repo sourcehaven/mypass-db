@@ -6,6 +6,8 @@ DB_PATH = Path.home().joinpath('.mypass', 'db', 'tinydb', 'db.json')
 
 
 def tinydb():
+    if not DB_PATH.parent.exists():
+        DB_PATH.parent.mkdir(parents=True)
     return TinyDB(DB_PATH)
 
 
