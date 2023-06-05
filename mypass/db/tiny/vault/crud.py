@@ -12,8 +12,8 @@ def create(
         *,
         password: str = None,
         salt: str = None,
-        name: str = None,
         username: str = None,
+        name: str = None,
         email: str = None,
         site: str = None,
         **kwargs
@@ -24,8 +24,8 @@ def create(
     Args:
         password (str, optional): The password value. Defaults to None.
         salt (str, optional): The salt value. Defaults to None.
-        name (str, optional): The name value. Defaults to None.
         username (str, optional): The username value. Defaults to None.
+        name (str, optional): The name value. Defaults to None.
         email (str, optional): The email value. Defaults to None.
         site (str, optional): The site value. Defaults to None.
         **kwargs: Additional key-value pairs representing document fields.
@@ -67,6 +67,7 @@ def read(cond: QueryLike = None) -> list[Document]:
 def update(
         cond: QueryLike | None = None,
         doc_ids: Iterable[int] | None = None,
+        *,
         password: str = None,
         salt: str = None,
         username: str = None,
@@ -79,10 +80,10 @@ def update(
     Update records in the vault database.
 
     Args:
-        cond (QueryLike | None, optional): A query-like object representing the condition for selecting records to update.
-            Defaults to None.
-        doc_ids (Iterable[int] | None, optional): An iterable of document IDs to specify the specific records to update.
-            Defaults to None.
+        cond (QueryLike | None, optional): A query-like object representing the condition
+        for selecting records to update. Defaults to None.
+        doc_ids (Iterable[int] | None, optional): An iterable of document IDs to specify
+        the specific records to update. Defaults to None.
         password (str, optional): The updated password value. Defaults to None.
         salt (str, optional): The updated salt value. Defaults to None.
         username (str, optional): The updated username value. Defaults to None.
