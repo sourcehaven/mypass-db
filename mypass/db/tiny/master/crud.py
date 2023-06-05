@@ -1,6 +1,6 @@
 from tinydb.queries import QueryLike
 
-from. import master
+from ._table import master
 
 
 def create(pw: str, salt: str):

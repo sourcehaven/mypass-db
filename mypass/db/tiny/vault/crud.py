@@ -2,7 +2,7 @@ from typing import Iterable
 
 from tinydb.queries import QueryLike
 
-from . import vault
+from ._table import vault
 
 
 def create(

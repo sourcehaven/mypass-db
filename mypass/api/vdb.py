@@ -1,11 +1,12 @@
-from flask import request
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 
 from mypass.db.tiny.vault import create, read, update, delete
-from . import DbApi
+
+VaultDbApi = Blueprint('vdb', __name__)
 
 
-@DbApi.route('/api/db/tiny/vault/create', methods=['POST'])
+@VaultDbApi.route('/api/db/tiny/vault/create', methods=['POST'])
 @jwt_required()
 def create_vault_entry():
     son = request.json
@@ -13,7 +14,7 @@ def create_vault_entry():
     return {'id': entry_id}, 200
 
 
-@DbApi.route('/api/db/tiny/vault/read', methods=['POST'])
+@VaultDbApi.route('/api/db/tiny/vault/read', methods=['POST'])
 @jwt_required()
 def query_vault_entry():
     son = request.json
@@ -21,7 +22,7 @@ def query_vault_entry():
     return {'documents': documents}, 200
 
 
-@DbApi.route('/api/db/tiny/vault/update', methods=['POST'])
+@VaultDbApi.route('/api/db/tiny/vault/update', methods=['POST'])
 @jwt_required()
 def update_vault_entry():
     son = request.json
@@ -29,7 +30,7 @@ def update_vault_entry():
     return {'ids': ids}, 200
 
 
-@DbApi.route('/api/db/tiny/vault/delete', methods=['POST'])
+@VaultDbApi.route('/api/db/tiny/vault/delete', methods=['POST'])
 @jwt_required()
 def delete_vault_entry():
     son = request.json

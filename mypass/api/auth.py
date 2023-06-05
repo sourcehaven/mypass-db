@@ -1,9 +1,9 @@
-from flask import request
+from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 
-from . import AuthApi
-
 _blacklist = set()
+
+AuthApi = Blueprint('auth', __name__)
 
 
 @AuthApi.route('/api/auth/signin', methods=['POST'])
@@ -13,10 +13,7 @@ def signin():
     pw = son['pw']
     access_token = create_access_token(identity=pw, fresh=True)
     refresh_token = create_refresh_token(identity=pw)
-    return {
-        'access_token': access_token,
-        'refresh_token': refresh_token
-    }, 201
+    return {'access_token': access_token, 'refresh_token': refresh_token}, 201
 
 
 @AuthApi.route('/api/auth/refresh', methods=['POST'])
@@ -24,9 +21,7 @@ def signin():
 def refresh():
     pw = get_jwt_identity()
     access_token = create_access_token(identity=pw, fresh=False)
-    return {
-        'access_token': access_token
-    }, 201
+    return {'access_token': access_token}, 201
 
 
 @AuthApi.route('/api/auth/logout', methods=['DELETE'])

@@ -5,7 +5,7 @@ import waitress
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from mypass.api import AuthApi, DbApi
+from mypass.api import AuthApi, MasterDbApi, VaultDbApi
 
 HOST = '0.0.0.0'
 PORT = 5758
@@ -22,7 +22,8 @@ class MyPassArgs(Namespace):
 def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     app = Flask(__name__)
     app.register_blueprint(AuthApi)
-    app.register_blueprint(DbApi)
+    app.register_blueprint(MasterDbApi)
+    app.register_blueprint(VaultDbApi)
 
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)

@@ -1,4 +1,3 @@
-from flask import Blueprint
-
-AuthApi = Blueprint('auth', __name__)
-DbApi = Blueprint('db', __name__)
+from .auth import AuthApi
+from .mdb import MasterDbApi
+from .vdb import VaultDbApi
