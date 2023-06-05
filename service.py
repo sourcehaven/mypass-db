@@ -5,7 +5,7 @@ import waitress
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
-from mypass.api import AuthApi
+from mypass.api import AuthApi, DbApi
 
 HOST = '0.0.0.0'
 PORT = 5758
@@ -22,9 +22,12 @@ class MyPassArgs(Namespace):
 def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     app = Flask(__name__)
     app.register_blueprint(AuthApi)
+    app.register_blueprint(DbApi)
 
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
+    app.config['JWT_BLACKLIST_ENABLED'] = True
+    app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
     JWTManager(app)
 
     if debug:
