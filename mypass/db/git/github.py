@@ -1,5 +1,5 @@
 from .base import GitRepoBase
 
 
-class LocalGitRepo(GitRepoBase):
+class GitHubRepo(GitRepoBase):
     pass

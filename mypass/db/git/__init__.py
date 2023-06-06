@@ -1,2 +1,2 @@
-from .local import GitRepo
-from .remote import GitHubRepo
+from .local import LocalGitRepo
+from .github import GitHubRepo
