@@ -1,3 +1,4 @@
+import logging
 from argparse import ArgumentParser, Namespace
 from datetime import timedelta
 
@@ -5,6 +6,7 @@ import waitress
 from flask import Flask
 from flask_jwt_extended import JWTManager
 
+from mypass import hooks
 from mypass.api import AuthApi, MasterDbApi, VaultDbApi
 
 HOST = '0.0.0.0'
@@ -26,14 +28,17 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     app.register_blueprint(VaultDbApi)
 
     app.config['JWT_SECRET_KEY'] = jwt_key
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(seconds=10)
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
-    JWTManager(app)
+    jwt = JWTManager(app)
+    jwt.token_in_blocklist_loader(hooks.check_if_token_in_blacklist)
 
     if debug:
+        logging.basicConfig(level=logging.DEBUG)
         app.run(host=host, port=port, debug=True)
     else:
+        logging.basicConfig(level=logging.ERROR)
         waitress.serve(app, host=host, port=port, channel_timeout=10, threads=1)
 
 
