@@ -1,5 +1,3 @@
-import logging
-
 from mypass.persistence.blacklist.memory import blacklist
 
 
