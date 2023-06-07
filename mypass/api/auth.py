@@ -10,6 +10,10 @@ AuthApi = Blueprint('auth', __name__)
 
 @AuthApi.route('/api/auth/signin', methods=['POST'])
 def signin():
+    # TODO: see if api has already logged in -> what to do?
+    #  - force logout first
+    #  - invalidate previous user
+    #  - warn and renew tokens
     logging.getLogger().debug('Clearing blacklists.')
     logging.getLogger().debug(f'Signing in user with\n    {request.json}')
     blacklist.clear()
