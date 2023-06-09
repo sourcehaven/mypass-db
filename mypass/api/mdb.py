@@ -20,7 +20,7 @@ def create_master_pw():
 @MasterDbApi.route('/api/db/tiny/master/read', methods=['POST'])
 @jwt_required()
 def query_master_pw():
-    logging.getLogger().debug(f'Reading master password with params\n    {request.json}')
+    logging.getLogger().debug(f'Reading master password.')
     doc = read_master_password()
     logging.getLogger().debug(f'Read master password: {doc}')
     return doc, 200
@@ -32,4 +32,4 @@ def update_master_pw():
     logging.getLogger().debug(f'Updating master password with params\n    {request.json}')
     entry_id = update_master_password(**request.json)
     logging.getLogger().debug(f'Updated master password with id: {entry_id}')
-    return {'ids': entry_id}, 200
+    return {'id': entry_id}, 200
