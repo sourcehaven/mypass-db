@@ -39,10 +39,8 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     jwt.token_in_blocklist_loader(hooks.check_if_token_in_blacklist)
 
     if debug:
-        logging.basicConfig(level=logging.DEBUG)
         app.run(host=host, port=port, debug=True)
     else:
-        logging.basicConfig(level=logging.ERROR)
         waitress.serve(app, host=host, port=port, channel_timeout=10, threads=1)
 
 
@@ -62,4 +60,8 @@ if __name__ == '__main__':
         help=f'specifies the secret jwt key by the application, defaults to "{JWT_KEY}" (should be changed)')
 
     args = arg_parser.parse_args(namespace=MyPassArgs)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
     run(debug=args.debug, host=args.host, port=args.port, jwt_key=args.jwt_key)
