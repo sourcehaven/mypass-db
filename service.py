@@ -1,7 +1,6 @@
 import logging
 from argparse import ArgumentParser, Namespace
 from datetime import timedelta
-from typing import Optional
 
 import waitress
 from flask import Flask
