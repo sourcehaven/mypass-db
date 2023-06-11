@@ -11,14 +11,14 @@ from mypass import hooks
 from mypass.api import AuthApi, MasterDbApi, VaultDbApi
 from mypass.public import IndexTemplate
 
-HOST = None
+HOST = 'localhost'
 PORT = 5758
 JWT_KEY = 'sourcehaven-db'
 
 
 class MyPassArgs(Namespace):
     debug: bool
-    host: Optional[str]
+    host: str
     port: int
     jwt_key: str
 
@@ -53,8 +53,8 @@ if __name__ == '__main__':
         '-d', '--debug', action='store_true', default=False,
         help='flag for debugging mode')
     arg_parser.add_argument(
-        '-H', '--host', type=str, default=None,
-        help=f'specifies the host for the microservice, defaults to "{None}"')
+        '-H', '--host', type=str, default=HOST,
+        help=f'specifies the host for the microservice, defaults to "{HOST}"')
     arg_parser.add_argument(
         '-p', '--port', type=int, default=PORT,
         help=f'specifies the port for the microservice, defaults to {PORT}')
