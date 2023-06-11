@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MyPass Database</title>
+</head>
+<body>
+<h1>Application Configuration</h1>
+<form action="/app/config" method="post">
+  <label for="port" class="config">Port</label>
+  <input id="port" class="number-input config" name="port" type="number" min="0" max="65535" step="1" value="5758"/>
+  <button class="danger" type="submit">RESTART</button>
+</form>
+</body>
+</html>
