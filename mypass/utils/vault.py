@@ -1,7 +1,23 @@
 from typing import Iterable
 
+from tinydb.table import Document
+
 from mypass.db import create_query
 from mypass.db.tiny.vault import read, update, delete
+
+
+def document_as_dict(document: Document, keep_id: bool = False) -> dict:
+    if keep_id:
+        return dict(_id=document.doc_id, **document)
+    return dict(document)
+
+
+def documents_as_dict(document: Document, keep_id: bool = False):
+    return [document_as_dict(doc, keep_id=keep_id) for doc in document]
+
+
+def read_vault_password(doc_id: int):
+    return read(doc_id=doc_id)
 
 
 def read_vault_passwords(cond: dict = None):
@@ -24,7 +40,7 @@ def update_vault_passwords(
         **kwargs):
     if cond is not None:
         cond = create_query(cond, logic='and')
-    items = update(cond, doc_ids, pw=pw, salt=salt, user=user, name=name, email=email, site=site, **kwargs)
+    items = update(cond, doc_ids, pw=pw, salt=salt, user=user, label=name, email=email, site=site, **kwargs)
     return items
 
 

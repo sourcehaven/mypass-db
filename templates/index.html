@@ -3,13 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <title>MyPass Database</title>
+
+  <link rel="stylesheet"  type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<h1>Application Configuration</h1>
-<form action="/app/config" method="post">
-  <label for="port" class="config">Port</label>
-  <input id="port" class="number-input config" name="port" type="number" min="0" max="65535" step="1" value="5758"/>
-  <button class="danger" type="submit">RESTART</button>
-</form>
+  <main class="main">
+    <h1>API endpoints</h1>
+
+    <div class="main-section-container">
+      <h2>Authentication</h2>
+
+      <div class="sub-section-container">
+        <h3>Login</h3>
+
+        <div class="sub-section">
+          <div>
+            <span class="sub-section-title">Url</span>
+            <p class="data-text"><a href="/api/auth/login" class="data-url">/api/auth/login</a></p>
+          </div>
+
+          <div>
+            <span class="sub-section-title">Method</span>
+            <p class="data-text">post</p>
+          </div>
+
+          <div>
+            <span class="sub-section-title">Request</span>
+            <div class="sub-sub-section-container">
+              <div class="sub-sub-section">
+                <span class="sub-section-title">Type</span>
+                <p class="data-text">application/json</p>
+              </div>
+              <div class="sub-sub-section">
+                <span class="sub-section-title">Params</span>
+                <ul class="data-listing">
+                  <li>pw (<span class="type-string">string</span>): <span class="description">Password provided for login.</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="sub-section-title">Response</span>
+            <div class="sub-sub-section-container">
+              <div class="sub-sub-section">
+                <span class="sub-section-title">Type</span>
+                <p class="data-text">application/json</p>
+              </div>
+              <div class="sub-sub-section">
+                <span class="sub-section-title">Params</span>
+                <ul class="data-listing">
+                  <li>access_token (<span class="type-string">string</span>): <span class="description">Access token generated for the given password used for login.</span></li>
+                  <li>refresh_token (<span class="type-string">string</span>): <span class="description">Refresh token generated for the given password used for login.</span></li>
+                </ul>
+              </div>
+              <div class="sub-sub-section">
+                <span class="sub-section-title">Code</span>
+                <ul class="data-listing">
+                  <li>201: <span class="description">Access and refresh token created successfully.</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="sub-section-title">Description</span>
+            <!-- TODO: what does login do? -->
+            <p class="data-text">...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-section-container">
+      <h3>Refresh</h3>
+
+      <div class="sub-section">
+        <div>
+          <span class="sub-section-title">Url</span>
+          <p class="data-text"><a href="/api/auth/refresh" class="data-url">/api/auth/refresh</a></p>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Method</span>
+          <p class="data-text">post</p>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Request</span>
+          <div class="sub-sub-section-container">
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Header</span>
+              <p class="data-text">The request header should contain authorization information given by the access_token given to you on login.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Response</span>
+          <div class="sub-sub-section-container">
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Type</span>
+              <p class="data-text">application/json</p>
+            </div>
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Params</span>
+              <ul class="data-listing">
+                <li>access_token (<span class="type-string">string</span>): <span class="description">New, non-expired, but not fresh access token generated for the given password used when logging in.</span></li>
+              </ul>
+            </div>
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Code</span>
+              <ul class="data-listing">
+                <li>201: <span class="description">Access token created successfully.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Description</span>
+          <!-- TODO: what does refresh do? -->
+          <p class="data-text">...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-section-container">
+      <h3>Logout</h3>
+
+      <div class="sub-section">
+        <div>
+          <span class="sub-section-title">Url</span>
+          <p class="data-text"><a href="/api/auth/logout" class="data-url">/api/auth/logout</a></p>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Method</span>
+          <p class="data-text">delete</p>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Request</span>
+          <div class="sub-sub-section-container">
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Header</span>
+              <p class="data-text">The request header should contain authorization information given by the access_token given to you on login.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Response</span>
+          <div class="sub-sub-section-container">
+            <div class="sub-sub-section">
+              <span class="sub-section-title">Code</span>
+              <ul class="data-listing">
+                <li>204: <span class="description">Successful logout.</span></li>
+                <li>409: <span class="description">Cannot find authorization information, cannot logout user with non-existing token.</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <span class="sub-section-title">Description</span>
+          <!-- TODO: what does logout do? -->
+          <p class="data-text">...</p>
+        </div>
+      </div>
+    </div>
+  </main>
 </body>
 </html>

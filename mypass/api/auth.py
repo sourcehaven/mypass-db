@@ -48,4 +48,4 @@ def logout():
         blacklist.add(jti)
         return '', 204
     except KeyError:
-        return '', 201
+        return '', 409

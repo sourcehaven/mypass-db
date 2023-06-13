@@ -10,14 +10,14 @@ def create(
         pw: str = None,
         salt: str = None,
         user: str = None,
-        name: str = None,
+        label: str = None,
         email: str = None,
         site: str = None,
         **kwargs
 ):
     d = kwargs
-    if name is not None:
-        d['name'] = name
+    if label is not None:
+        d['label'] = label
     if pw is not None:
         d['pw'] = pw
     if salt is not None:
@@ -32,8 +32,10 @@ def create(
         return t.insert(d)
 
 
-def read(cond: QueryLike = None):
+def read(cond: QueryLike = None, doc_id: int = None):
     with vault() as t:
+        if doc_id is not None:
+            return t.get(cond=cond, doc_id=doc_id)
         if cond is None:
             return t.all()
         return t.search(cond=cond)
@@ -46,14 +48,14 @@ def update(
         pw: str = None,
         salt: str = None,
         user: str = None,
-        name: str = None,
+        label: str = None,
         email: str = None,
         site: str = None,
         **kwargs
 ):
     d = kwargs
-    if name is not None:
-        d['name'] = name
+    if label is not None:
+        d['label'] = label
     if pw is not None:
         d['pw'] = pw
     if salt is not None:
@@ -65,6 +67,7 @@ def update(
     if site is not None:
         d['site'] = site
     with vault() as t:
+        # TODO: consider the case of key deletion with tinydb.operations.delete
         return t.update(fields=d, cond=cond, doc_ids=doc_ids)
 
 

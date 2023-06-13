@@ -5,9 +5,10 @@ from datetime import timedelta
 import waitress
 from flask import Flask
 from flask_jwt_extended import JWTManager
+from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import hooks
-from mypass.api import AuthApi, MasterDbApi, VaultDbApi
+from mypass.api import AuthApi, TinyDbApi
 from mypass.public import IndexTemplate
 
 HOST = 'localhost'
@@ -24,17 +25,21 @@ class MyPassArgs(Namespace):
 
 def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     app = Flask(__name__)
-    # register api endpoints
-    app.register_blueprint(AuthApi)
-    app.register_blueprint(MasterDbApi)
-    app.register_blueprint(VaultDbApi)
-    # add public templates
-    app.register_blueprint(IndexTemplate)
-
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+    app.config.from_object(__name__)
+
+    # register api endpoints
+    app.register_blueprint(AuthApi)
+    app.register_blueprint(TinyDbApi)
+    # add public templates
+    app.register_blueprint(IndexTemplate)
+
+    app.register_error_handler(UnsupportedMediaType, hooks.unsupported_media_type_handler)
+    app.register_error_handler(Exception, hooks.base_error_handler)
+
     jwt = JWTManager(app)
     jwt.token_in_blocklist_loader(hooks.check_if_token_in_blacklist)
 
