@@ -1,1 +1,1 @@
-from .db import DbError, MasterPasswordExistsError, MultipleMasterPasswordsError
+from .db import DbError, MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError

@@ -8,27 +8,37 @@ from werkzeug.exceptions import UnsupportedMediaType
 from mypass import create_master_password, read_master_password, update_master_password, \
     create_vault_password, read_vault_password, read_vault_passwords, update_vault_password, update_vault_passwords, \
     delete_vault_password, delete_vault_passwords, document_as_dict, documents_as_dict
-from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError
+from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError
 
 TinyDbApi = Blueprint('tinydb', __name__)
 
 
+def _db_error_handler(err):
+    return {'msg': f'{err.__class__.__name__} :: {err}'}, 500
+
+
 @TinyDbApi.errorhandler(MasterPasswordExistsError)
 def master_password_exists_handler(err):
-    return {'msg': str(err)}, 500
+    return _db_error_handler(err)
 
 
 @TinyDbApi.errorhandler(MultipleMasterPasswordsError)
 def multiple_master_passwords_handler(err):
-    return {'msg': str(err)}, 500
+    return _db_error_handler(err)
+
+
+@TinyDbApi.errorhandler(EmptyRecordInsertionError)
+def empty_record_insertion_handler(err):
+    return _db_error_handler(err)
 
 
 @TinyDbApi.route('/api/db/tiny/master/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def create_master_pw():
-    logging.getLogger().debug(f'Creating master password with params\n    {request.json}')
-    pw, salt = request.json['pw'], request.json['salt']
-    doc_id = create_master_password(pw=pw, salt=salt)
+    request_obj = request.json
+    logging.getLogger().debug(f'Creating master password with params\n    {request_obj}')
+    user, token, pw, salt = request_obj['user'], request_obj['token'], request_obj['pw'], request_obj['salt']
+    doc_id = create_master_password(user=user, token=token, pw=pw, salt=salt)
     logging.getLogger().debug(f'Created master password with id: {doc_id}')
     return {'_id': doc_id}, 201
 
@@ -36,8 +46,11 @@ def create_master_pw():
 @TinyDbApi.route('/api/db/tiny/master/read', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_master_pw():
-    logging.getLogger().debug(f'Reading master password.')
-    doc = read_master_password()
+    request_obj = request.json
+    logging.getLogger().debug(f'Reading master password with params\n    {request_obj}')
+    user = request_obj['user']
+    doc = read_master_password(user)
+    _user = doc.pop('user', None)
     logging.getLogger().debug(f'Read master password: {doc}')
     return doc, 200
 
@@ -46,8 +59,8 @@ def query_master_pw():
 @jwt_required(fresh=True, optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def update_master_pw():
     logging.getLogger().debug(f'Updating master password with params\n    {request.json}')
-    pw, salt = request.json['pw'], request.json['salt']
-    doc_id = update_master_password(pw=pw, salt=salt)
+    user, token, pw, salt = request.json['user'], request.json['token'], request.json['pw'], request.json['salt']
+    doc_id = update_master_password(user=user, token=token, pw=pw, salt=salt)
     logging.getLogger().debug(f'Updated master password with id: {doc_id}')
     return {'_id': doc_id}, 200
 
@@ -57,7 +70,9 @@ def update_master_pw():
 def create_vault_entry():
     request_obj = request.json
     logging.getLogger().debug(f'Creating password inside user vault with params\n    {request_obj}')
-    doc_id = create_vault_password(**request_obj)
+    # ensure that the main user is passed along the request
+    owner = request_obj.pop('_user_id')
+    doc_id = create_vault_password(owner, **request_obj)
     logging.getLogger().debug(f'Created password inside vault with id: {doc_id}')
     return {'_id': doc_id}, 201
 

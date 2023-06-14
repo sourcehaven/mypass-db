@@ -8,3 +8,11 @@ class MasterPasswordExistsError(DbError):
 
 class MultipleMasterPasswordsError(DbError):
     pass
+
+
+class EmptyRecordInsertionError(DbError):
+    pass
+
+
+class UserNotExistsError(DbError):
+    pass

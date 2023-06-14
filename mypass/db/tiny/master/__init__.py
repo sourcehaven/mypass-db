@@ -1,1 +1,1 @@
-from .crud import create, read, update, delete
+from .crud import create, read, update, delete, delete_all

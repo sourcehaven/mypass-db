@@ -1,4 +1,5 @@
 import logging
+import os
 
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
@@ -28,7 +29,7 @@ def login():
 
 
 @AuthApi.route('/api/auth/refresh', methods=['POST'])
-@jwt_required(refresh=True)
+@jwt_required(refresh=True, optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def refresh():
     pw = get_jwt_identity()
     logging.getLogger().debug('Creating non-fresh access token.')

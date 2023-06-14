@@ -1,23 +1,74 @@
 from typing import Iterable
 
+from tinydb import Query
 from tinydb.table import Document
 
 from mypass.db import create_query
-from mypass.db.tiny.vault import read, update, delete
+from mypass.db.tiny.vault import create, read, update, delete
+from mypass.db.tiny.master import read as get_master
+from mypass.exceptions import EmptyRecordInsertionError, MultipleMasterPasswordsError
+from mypass.exceptions.db import UserNotExistsError
 
 
-def document_as_dict(document: Document, keep_id: bool = False) -> dict:
+def document_as_dict(document: Document, keep_id: bool = False, remove_special: bool = True) -> dict:
+    if remove_special:
+        for k in document.copy():
+            if k.startswith('_'):
+                del document[k]
     if keep_id:
         return dict(_id=document.doc_id, **document)
     return dict(document)
 
 
-def documents_as_dict(document: Document, keep_id: bool = False):
-    return [document_as_dict(doc, keep_id=keep_id) for doc in document]
+def documents_as_dict(document: Document, keep_id: bool = False, remove_special: bool = True):
+    return [document_as_dict(doc, keep_id=keep_id, remove_special=remove_special) for doc in document]
 
 
 def read_vault_password(doc_id: int):
     return read(doc_id=doc_id)
+
+
+def create_vault_password(
+        __user_id: int | str,
+        *,
+        pw: str = None,
+        salt: str = None,
+        user: str = None,
+        label: str = None,
+        email: str = None,
+        site: str = None,
+        **kwargs
+):
+    if isinstance(__user_id, str):
+        q = Query()
+        items = get_master(q.user == __user_id)
+        if len(items) > 1:
+            raise MultipleMasterPasswordsError(
+                f'Using a corrupted database with\n'
+                f'    user: {user}\n'
+                f'    number of master passwords: {len(items)}.')
+        try:
+            __user_id = items[0].doc_id
+        except IndexError:
+            raise UserNotExistsError(f'Given user `{__user_id}` has no associated user_id in the database.')
+    assert (isinstance(__user_id, int) and __user_id >= 0), \
+        'User id should be non-negative integer or a string (username).'
+    d = kwargs
+    if label is not None:
+        d['label'] = label
+    if pw is not None:
+        d['pw'] = pw
+    if salt is not None:
+        d['salt'] = salt
+    if user is not None:
+        d['user'] = user
+    if email is not None:
+        d['email'] = email
+    if site is not None:
+        d['site'] = site
+    if any(d):
+        return create(_user_id=__user_id, **d)
+    raise EmptyRecordInsertionError('Cannot insert empty record into vault table.')
 
 
 def read_vault_passwords(cond: dict = None):
@@ -40,6 +91,8 @@ def update_vault_passwords(
         **kwargs):
     if cond is not None:
         cond = create_query(cond, logic='and')
+    # do not allow updating the value of special _user_id field
+    _user_id = kwargs.pop('_user_id', None)
     items = update(cond, doc_ids, pw=pw, salt=salt, user=user, label=name, email=email, site=site, **kwargs)
     return items
 

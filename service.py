@@ -46,7 +46,7 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
     if debug:
         app.run(host=host, port=port, debug=True)
     else:
-        waitress.serve(app, host=host, port=port, channel_timeout=10, threads=1)
+        waitress.serve(app, host=host, port=port, channel_timeout=10, threads=8)
 
 
 if __name__ == '__main__':
