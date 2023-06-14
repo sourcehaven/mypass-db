@@ -10,13 +10,10 @@ def create(**kwargs):
         return t.insert(kwargs)
 
 
-def read(cond: QueryLike = None, doc_id: int = None):
+def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
     with vault() as t:
-        if doc_id is not None:
-            return t.get(cond=cond, doc_id=doc_id)
-        if cond is None:
-            return t.all()
-        return t.search(cond=cond)
+        docs = t.get(cond=cond, doc_ids=doc_ids)
+        return [doc for doc in docs if doc is not None]
 
 
 def update(

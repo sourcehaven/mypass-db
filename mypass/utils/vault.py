@@ -20,12 +20,13 @@ def document_as_dict(document: Document, keep_id: bool = False, remove_special: 
     return dict(document)
 
 
-def documents_as_dict(document: Document, keep_id: bool = False, remove_special: bool = True):
-    return [document_as_dict(doc, keep_id=keep_id, remove_special=remove_special) for doc in document]
+def documents_as_dict(documents: Iterable[Document], keep_id: bool = False, remove_special: bool = True):
+    return [document_as_dict(doc, keep_id=keep_id, remove_special=remove_special) for doc in documents]
 
 
 def read_vault_password(doc_id: int):
-    return read(doc_id=doc_id)
+    ret = read(doc_ids=[doc_id])
+    return ret[0] if ret else None
 
 
 def create_vault_password(
@@ -71,10 +72,10 @@ def create_vault_password(
     raise EmptyRecordInsertionError('Cannot insert empty record into vault table.')
 
 
-def read_vault_passwords(cond: dict = None):
+def read_vault_passwords(cond: dict = None, doc_ids: Iterable[int] = None):
     if cond is not None:
         cond = create_query(cond, logic='and')
-    items = read(cond)
+    items = read(cond, doc_ids=doc_ids)
     return items
 
 

@@ -10,11 +10,10 @@ def create(user: str, token: str, pw: str, salt: str):
         return t.insert({'user': user, 'token': token, 'pw': pw, 'salt': salt})
 
 
-def read(cond: QueryLike = None):
+def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
     with master() as t:
-        if cond is None:
-            return t.all()
-        return t.search(cond=cond)
+        docs = t.get(cond=cond, doc_ids=doc_ids)
+        return [doc for doc in docs if doc is not None]
 
 
 def update(cond: QueryLike = None, doc_ids: Iterable[int] = None, *, token: str, pw: str, salt: str):
