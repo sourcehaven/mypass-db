@@ -7,8 +7,11 @@ from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import create_master_password, read_master_password, update_master_password, \
     create_vault_password, read_vault_password, read_vault_passwords, update_vault_password, update_vault_passwords, \
-    delete_vault_password, delete_vault_passwords, document_as_dict, documents_as_dict
+    delete_vault_password, delete_vault_passwords
 from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError
+
+from . import _utils as utils
+
 
 TinyDbApi = Blueprint('tinydb', __name__)
 
@@ -68,11 +71,13 @@ def update_master_pw():
 @TinyDbApi.route('/api/db/tiny/vault/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def create_vault_entry():
-    request_obj = request.json
+    request_obj = dict(request.json)
     logging.getLogger().debug(f'Creating password inside user vault with params\n    {request_obj}')
-    # ensure that the main user is passed along the request
-    owner = request_obj.pop('_user_id')
-    doc_id = create_vault_password(owner, **request_obj)
+    # see if the main user is passed along the request
+    uid = request_obj.pop('_uid', None)
+    # clearn every other unhandled special items
+    request_obj = utils.clear_special_keys(request_obj)
+    doc_id = create_vault_password(uid, **request_obj)
     logging.getLogger().debug(f'Created password inside vault with id: {doc_id}')
     return {'_id': doc_id}, 201
 
@@ -81,16 +86,22 @@ def create_vault_entry():
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_vault_entry():
     try:
-        request_obj = request.json
-        if '_id' in request_obj:
-            if request_obj['_id'] is not None:
-                return document_as_dict(read_vault_password(doc_id=request_obj['_id']), keep_id=True), 200
-            elif 'cond' in request_obj and request_obj['cond'] is not None:
-                return document_as_dict(read_vault_password(cond=request_obj['cond']), keep_id=True), 200
-        documents = documents_as_dict(read_vault_passwords(
-            request_obj.get('cond', None), request_obj.get('_ids', None)), keep_id=True)
+        request_obj = dict(request.json)
+        uid = request_obj.pop('_uid', None)
+        doc_id = request_obj.pop('_id', None)
+        doc_ids = request_obj.pop('_ids', None)
+        cond = request_obj.pop('cond', None)
+
+        if doc_id is not None:
+            document: dict = read_vault_password(uid, doc_id=doc_id, cond=cond)
+            if document is not None:
+                return document, 200
+            return {
+                'msg': 'NOT FOUND :: Requested password cannot be read, as it does not exists.',
+                '_id': doc_id, 'cond': cond}, 404
+        documents = read_vault_passwords(uid, cond=cond, doc_ids=doc_ids)
     except UnsupportedMediaType:
-        documents = documents_as_dict(read_vault_passwords(), keep_id=True)
+        documents = read_vault_passwords()
     return {'documents': documents}, 200
 
 
@@ -98,23 +109,38 @@ def query_vault_entry():
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def update_vault_entry():
     request_obj = dict(request.json)
+    uid = request_obj.pop('_uid', None)
     doc_id = request_obj.pop('_id', None)
-    if doc_id is not None:
-        doc_id = update_vault_password(doc_id=doc_id, **request_obj)
-        return {'_id': doc_id}, 200
     doc_ids = request_obj.pop('_ids', None)
-    doc_ids = update_vault_passwords(doc_ids=doc_ids, **request_obj)
-    return {'_ids': doc_ids}, 200
+    cond = request_obj.pop('cond', None)
+    update_obj = utils.clear_special_keys(request_obj)
+
+    if doc_id is not None:
+        updated_id: int = update_vault_password(uid, doc_id=doc_id, cond=cond, **update_obj)
+        if updated_id is not None:
+            return {'_id': updated_id}, 200
+        return {
+            'msg': 'NOT FOUND :: Requested password update cannot be done, as it does not exists.',
+            '_id': doc_id, 'cond': cond}, 404
+    updated_ids = update_vault_passwords(uid, cond=cond, doc_ids=doc_ids, **update_obj)
+    return {'_ids': updated_ids}, 200
 
 
 @TinyDbApi.route('/api/db/tiny/vault/delete', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def delete_vault_entry():
     request_obj = dict(request.json)
+    uid = request_obj.pop('_uid', None)
     doc_id = request_obj.pop('_id', None)
-    if doc_id is not None:
-        doc_id = delete_vault_password(doc_id=doc_id)
-        return {'_id': doc_id}, 200
     doc_ids = request_obj.pop('_ids', None)
-    doc_ids = delete_vault_passwords(doc_ids=doc_ids, **request_obj)
-    return {'_ids': doc_ids}, 200
+    cond = request_obj.pop('cond', None)
+
+    if doc_id is not None:
+        deleted_id: int = delete_vault_password(uid, doc_id=doc_id, cond=cond)
+        if deleted_id is not None:
+            return {'_id': deleted_id}, 200
+        return {
+            'msg': 'NOT FOUND :: Requested password cannot be deleted, as it does not exists.',
+            '_id': doc_id, 'cond': cond}, 404
+    deleted_ids = delete_vault_passwords(uid, cond=cond, doc_ids=doc_ids)
+    return {'_ids': deleted_ids}, 200
