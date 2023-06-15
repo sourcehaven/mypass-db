@@ -12,12 +12,15 @@ def create(**kwargs):
 
 
 def read_one(doc_id: int, cond: QueryLike = None):
+    assert doc_id is None or cond is None, 'Specifying both `doc_id` and `cond` is invalid.'
+    assert doc_id is not None or cond is not None, 'Specify either `doc_id` or `cond`.'
     with vault() as t:
         doc: Document | None = t.get(doc_id=doc_id, cond=cond)
         return doc
 
 
 def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+    assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
         if doc_ids is not None:
             docs: list[Document] = t.get(doc_ids=doc_ids)
@@ -32,12 +35,14 @@ def update(
         doc_ids: Iterable[int] = None,
         **kwargs
 ):
+    assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
         # TODO: consider the case of key deletion with tinydb.operations.delete
         return t.update(fields=kwargs, cond=cond, doc_ids=doc_ids)
 
 
 def delete(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+    assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
         return t.remove(cond=cond, doc_ids=doc_ids)
 
