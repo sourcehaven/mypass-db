@@ -73,7 +73,7 @@ def read_vault_passwords(cond: dict = None, doc_ids: Iterable[int] = None):
     return items
 
 
-def read_vault_password(doc_id: int, cond: dict = None):
+def read_vault_password(doc_id: int = None, cond: dict = None):
     if cond is not None:
         cond = create_query(cond, logic='and')
     return read_one(doc_id=doc_id, cond=cond)

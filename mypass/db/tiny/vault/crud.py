@@ -11,7 +11,7 @@ def create(**kwargs):
         return t.insert(kwargs)
 
 
-def read_one(doc_id: int, cond: QueryLike = None):
+def read_one(doc_id: int = None, cond: QueryLike = None):
     with vault() as t:
         doc: Document | None = t.get(doc_id=doc_id, cond=cond)
         return doc
