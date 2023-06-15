@@ -16,3 +16,7 @@ class EmptyRecordInsertionError(DbError):
 
 class UserNotExistsError(DbError):
     pass
+
+
+class RecordNotFoundError(DbError):
+    pass

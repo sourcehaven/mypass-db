@@ -1,6 +1,7 @@
 from typing import Iterable
 
 from tinydb.queries import QueryLike
+from tinydb.table import Document
 
 from mypass.db.tiny.master._table import master
 
@@ -10,10 +11,20 @@ def create(user: str, token: str, pw: str, salt: str):
         return t.insert({'user': user, 'token': token, 'pw': pw, 'salt': salt})
 
 
+def read_one(doc_id: int, cond: QueryLike = None):
+    with master() as t:
+        doc: Document | None = t.get(doc_id=doc_id, cond=cond)
+        return doc
+
+
 def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
     with master() as t:
-        docs = t.get(cond=cond, doc_ids=doc_ids)
-        return [doc for doc in docs if doc is not None]
+        if doc_ids is not None:
+            docs: list[Document] = t.get(doc_ids=doc_ids)
+            return docs
+        elif cond is not None:
+            return t.search(cond)
+        return t.all()
 
 
 def update(cond: QueryLike = None, doc_ids: Iterable[int] = None, *, token: str, pw: str, salt: str):

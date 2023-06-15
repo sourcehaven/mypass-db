@@ -84,7 +84,8 @@ def query_vault_entry():
         request_obj = request.json
         if '_id' in request_obj:
             return document_as_dict(read_vault_password(doc_id=request_obj['_id']), keep_id=True), 200
-        documents = documents_as_dict(read_vault_passwords(request_obj.get('cond', None)), keep_id=True)
+        documents = documents_as_dict(read_vault_passwords(
+            request_obj.get('cond', None), request_obj.get('_ids', None)), keep_id=True)
     except UnsupportedMediaType:
         documents = documents_as_dict(read_vault_passwords(), keep_id=True)
 

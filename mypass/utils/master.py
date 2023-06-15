@@ -1,7 +1,7 @@
 from tinydb import Query
 
 from mypass.db.tiny.master import create, read, update
-from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError
+from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, UserNotExistsError
 
 
 def create_master_password(user: str, token: str, pw: str, salt: str):
@@ -20,8 +20,10 @@ def read_master_password(user: str):
             f'Using a corrupted database with\n'
             f'    user: {user}\n'
             f'    number of master passwords: {len(items)}.')
-    # TODO: raise special exception if no items found (this only throws IndexError(0)
-    return items[0]
+    try:
+        return items[0]
+    except IndexError:
+        raise UserNotExistsError(f'User `{user}` does not exist in the database.')
 
 
 def update_master_password(user: str, token: str, pw: str, salt: str):
@@ -32,8 +34,10 @@ def update_master_password(user: str, token: str, pw: str, salt: str):
             f'Using a corrupted database with\n'
             f'    user: {user}\n'
             f'    number of master passwords affected: {len(items)}.')
-    # TODO: raise special exception if no items found (this only throws IndexError(0)
-    return items[0]
+    try:
+        return items[0]
+    except IndexError:
+        raise UserNotExistsError(f'User `{user}` does not exist in the database.')
 
 
 def _main():

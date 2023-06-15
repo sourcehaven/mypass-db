@@ -4,10 +4,9 @@ from tinydb import Query
 from tinydb.table import Document
 
 from mypass.db import create_query
-from mypass.db.tiny.vault import create, read, update, delete
+from mypass.db.tiny.vault import create, read, read_one, update, delete
 from mypass.db.tiny.master import read as get_master
-from mypass.exceptions import EmptyRecordInsertionError, MultipleMasterPasswordsError
-from mypass.exceptions.db import UserNotExistsError
+from mypass.exceptions import EmptyRecordInsertionError, MultipleMasterPasswordsError, UserNotExistsError
 
 
 def document_as_dict(document: Document, keep_id: bool = False, remove_special: bool = True) -> dict:
@@ -22,11 +21,6 @@ def document_as_dict(document: Document, keep_id: bool = False, remove_special: 
 
 def documents_as_dict(documents: Iterable[Document], keep_id: bool = False, remove_special: bool = True):
     return [document_as_dict(doc, keep_id=keep_id, remove_special=remove_special) for doc in documents]
-
-
-def read_vault_password(doc_id: int):
-    ret = read(doc_ids=[doc_id])
-    return ret[0] if ret else None
 
 
 def create_vault_password(
@@ -77,6 +71,12 @@ def read_vault_passwords(cond: dict = None, doc_ids: Iterable[int] = None):
         cond = create_query(cond, logic='and')
     items = read(cond, doc_ids=doc_ids)
     return items
+
+
+def read_vault_password(doc_id: int, cond: dict = None):
+    if cond is not None:
+        cond = create_query(cond, logic='and')
+    return read_one(doc_id=doc_id, cond=cond)
 
 
 def update_vault_passwords(
