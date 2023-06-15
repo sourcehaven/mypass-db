@@ -75,8 +75,9 @@ def create_vault_entry():
     logging.getLogger().debug(f'Creating password inside user vault with params\n    {request_obj}')
     # see if the main user is passed along the request
     uid = request_obj.pop('_uid', None)
-    # clearn every other unhandled special items
-    request_obj = utils.clear_special_keys(request_obj)
+    # clearn every other unhandled special items, except salt
+    # TODO: need configurable whitelist?
+    request_obj = utils.clear_special_keys(request_obj, whitelist=['_salt'])
     doc_id = create_vault_password(uid, **request_obj)
     logging.getLogger().debug(f'Created password inside vault with id: {doc_id}')
     return {'_id': doc_id}, 201
