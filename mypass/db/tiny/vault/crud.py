@@ -1,7 +1,9 @@
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from tinydb.queries import QueryLike
 from tinydb.table import Document
+
+import mypass.db.tiny.operations as ops
 
 from ._table import vault
 
@@ -11,7 +13,7 @@ def create(**kwargs):
         return t.insert(kwargs)
 
 
-def read_one(doc_id: int = None, cond: QueryLike = None):
+def read_one(*, doc_id: int = None, cond: QueryLike = None):
     assert doc_id is None or cond is None, 'Specifying both `doc_id` and `cond` is invalid.'
     assert doc_id is not None or cond is not None, 'Specify either `doc_id` or `cond`.'
     with vault() as t:
@@ -19,7 +21,7 @@ def read_one(doc_id: int = None, cond: QueryLike = None):
         return doc
 
 
-def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+def read(*, cond: QueryLike = None, doc_ids: Iterable[int] = None):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
         if doc_ids is not None:
@@ -31,17 +33,21 @@ def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
 
 
 def update(
+        fields: Mapping = None,
+        *,
         cond: QueryLike = None,
         doc_ids: Iterable[int] = None,
-        **kwargs
+        remove_keys: Iterable[str] = None
 ):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
-        # TODO: consider the case of key deletion with tinydb.operations.delete
-        return t.update(fields=kwargs, cond=cond, doc_ids=doc_ids)
+        updated_ids = t.update(fields=fields, cond=cond, doc_ids=doc_ids)
+        if remove_keys is not None:
+            removed_key_ids = t.update(ops.delete_keys(remove_keys), cond=cond, doc_ids=doc_ids)
+        return list(set.union(set(updated_ids), set(removed_key_ids)))
 
 
-def delete(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+def delete(*, cond: QueryLike = None, doc_ids: Iterable[int] = None):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with vault() as t:
         return t.remove(cond=cond, doc_ids=doc_ids)

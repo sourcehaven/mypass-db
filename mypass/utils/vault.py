@@ -1,12 +1,12 @@
 from functools import wraps
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from tinydb import Query
 from tinydb.table import Document
 
 from mypass.db import create_query
 from mypass.db.tiny.vault import create, read, read_one, update, delete
-from mypass.db.tiny.master import read as get_master
+from mypass.db.tiny.master import read as read_master
 from mypass.exceptions import EmptyRecordInsertionError, MultipleMasterPasswordsError, UserNotExistsError
 
 
@@ -16,7 +16,7 @@ UID_FIELD = '_UID'
 
 def _convert_name_to_id(__user: str):
     q = Query()
-    items = get_master(q.user == __user)
+    items = read_master(cond=q.user == __user)
     if len(items) > 1:
         raise MultipleMasterPasswordsError(
             f'Using a corrupted database with\n'
@@ -28,7 +28,14 @@ def _convert_name_to_id(__user: str):
         raise UserNotExistsError(f'Given user `{__user}` has no associated user_id in the database.')
 
 
-def _check_uid(f):
+def _checkout_uid(f):
+    """
+    Checks user id validity, but in case of valid ID,
+    (e.g. 15, 18, or any positive integer) this will NOT check for existing
+    user id in master vault. Checking the user validity is not the responsibility
+    of this app.
+    """
+
     @wraps(f)
     def wrapper(__uid, *args, **kwargs):
         if __uid is None:
@@ -76,8 +83,8 @@ def documents_as_dict(documents: Iterable[Document], keep_id: bool = False, remo
     return [document_as_dict(doc, keep_id=keep_id, remove_special=remove_special) for doc in documents]
 
 
-@_check_uid
-def create_vault_password(
+@_checkout_uid
+def create_vault_entry(
         __uid: int | str = None,
         *,
         pw: str = None,
@@ -111,15 +118,15 @@ def create_vault_password(
     raise EmptyRecordInsertionError('Cannot insert empty record into vault table.')
 
 
-@_check_uid
-def read_vault_passwords(__uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
+@_checkout_uid
+def read_vault_entries(__uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
     cond = create_query_with_uid(__uid, cond)
     items = read(cond=cond)
     return documents_as_dict(filter_doc_ids(items, doc_ids), keep_id=True)
 
 
-@_check_uid
-def read_vault_password(__uid: int | str = None, *, doc_id: int = None, cond: dict = None):
+@_checkout_uid
+def read_vault_entry(__uid: int | str = None, *, cond: dict = None, doc_id: int = None):
     assert doc_id is not None or cond is not None, \
         'Querying a specific password without either `doc_id` or `cond` is meaningless.'
     cond = create_query_with_uid(__uid, cond)
@@ -137,84 +144,72 @@ def read_vault_password(__uid: int | str = None, *, doc_id: int = None, cond: di
     return document_as_dict(item, keep_id=True)
 
 
-@_check_uid
-def update_vault_passwords(
+@_checkout_uid
+def update_vault_entries(
         __uid: int | str = None,
+        fields: Mapping = None,
         *,
         cond: dict = None,
         doc_ids: Iterable[int] = None,
-        pw: str = None,
-        salt: str = None,
-        user: str = None,
-        name: str = None,
-        email: str = None,
-        site: str = None,
-        **kwargs
+        remove_keys: Iterable[int] = None
 ):
     cond = create_query_with_uid(__uid, cond)
-    update_kwargs = dict(pw=pw, salt=salt, user=user, label=name, email=email, site=site, **kwargs)
     if doc_ids is None:
-        items = update(cond, None, **update_kwargs)
+        items = update(fields, cond=cond, remove_keys=remove_keys)
     else:
-        docs = read_vault_passwords(__uid, cond=cond, doc_ids=doc_ids)
-        items = update(None, [d[ID_FIELD] for d in docs], **update_kwargs)
+        docs = read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
+        items = update(fields, doc_ids=[d[ID_FIELD] for d in docs], remove_keys=remove_keys)
     return items
 
 
-@_check_uid
-def update_vault_password(
+@_checkout_uid
+def update_vault_entry(
         __uid: int | str = None,
+        fields: Mapping = None,
         *,
-        doc_id: int,
         cond: dict = None,
-        pw: str = None,
-        salt: str = None,
-        user: str = None,
-        name: str = None,
-        email: str = None,
-        site: str = None,
-        **kwargs
+        doc_id: int,
+        remove_keys: Iterable[str] = None
 ):
     cond = create_query_with_uid(__uid, cond)
-    update_kwargs = dict(pw=pw, salt=salt, user=user, label=name, email=email, site=site, **kwargs)
     if cond is not None:
         # check the conditions first, and only update matching items
-        item = read_vault_password(__uid, doc_id=doc_id, cond=cond)
+        item = read_vault_entry(__uid, doc_id=doc_id, cond=cond)
         if item is not None:
-            items = update(None, [doc_id], **update_kwargs)
+            items = update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
         else:
             items = []
     else:
-        items = update(None, [doc_id], **update_kwargs)
+        items = update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
     try:
         return items[0]
     except IndexError:
         return None
 
 
-@_check_uid
-def delete_vault_passwords(__uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
+@_checkout_uid
+def delete_vault_entries(__uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
     cond = create_query_with_uid(__uid, cond)
     if doc_ids is None:
-        items = delete(cond, None)
+        items = delete(cond=cond)
     else:
-        docs = read_vault_passwords(__uid, cond=cond, doc_ids=doc_ids)
-        items = delete(None, [d[ID_FIELD] for d in docs])
+        docs = read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
+        items = delete(doc_ids=[d[ID_FIELD] for d in docs])
     return items
 
 
-@_check_uid
-def delete_vault_password(__uid: int | str = None, *, doc_id: int, cond: dict = None):
+@_checkout_uid
+def delete_vault_entry(__uid: int | str = None, *, cond: dict = None, doc_id: int):
     cond = create_query_with_uid(__uid, cond)
     if cond is not None:
         # check the conditions first, and only delete matching items
-        item = read_vault_password(__uid, doc_id=doc_id, cond=cond)
+        item = read_vault_entry(__uid, doc_id=doc_id, cond=cond)
         if item is not None:
-            items = delete(None, [doc_id])
+            items = delete(doc_ids=[doc_id])
         else:
             items = []
     else:
-        items = delete(None, [doc_id])
+        items = delete(doc_ids=[doc_id])
     try:
         return items[0]
     except IndexError:
@@ -227,9 +222,9 @@ def _main():
     val = cond(doc)
     print(val)
 
-    pw = read_vault_password('mypass', doc_id=1)
+    pw = read_vault_entry('mypass', doc_id=1)
     print(pw)
-    pw = read_vault_passwords(1)
+    pw = read_vault_entries(1)
     print(pw)
 
 

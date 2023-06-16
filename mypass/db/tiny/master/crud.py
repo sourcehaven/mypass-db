@@ -11,7 +11,7 @@ def create(user: str, token: str, pw: str, salt: str):
         return t.insert({'user': user, 'token': token, 'pw': pw, 'salt': salt})
 
 
-def read_one(doc_id: int = None, cond: QueryLike = None):
+def read_one(*, cond: QueryLike = None, doc_id: int = None):
     assert doc_id is None or cond is None, 'Specifying both `doc_id` and `cond` is invalid.'
     assert doc_id is not None or cond is not None, 'Specify either `doc_id` or `cond`.'
     with master() as t:
@@ -19,7 +19,7 @@ def read_one(doc_id: int = None, cond: QueryLike = None):
         return doc
 
 
-def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+def read(*, cond: QueryLike = None, doc_ids: Iterable[int] = None):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with master() as t:
         if doc_ids is not None:
@@ -30,13 +30,13 @@ def read(cond: QueryLike = None, doc_ids: Iterable[int] = None):
         return t.all()
 
 
-def update(cond: QueryLike = None, doc_ids: Iterable[int] = None, *, token: str, pw: str, salt: str):
+def update(token: str, pw: str, salt: str, *, cond: QueryLike = None, doc_ids: Iterable[int] = None):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with master() as t:
         return t.update(fields={'token': token, 'pw': pw, 'salt': salt}, cond=cond, doc_ids=doc_ids)
 
 
-def delete(cond: QueryLike = None, doc_ids: Iterable[int] = None):
+def delete(*, cond: QueryLike = None, doc_ids: Iterable[int] = None):
     assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
     with master() as t:
         return t.remove(cond=cond, doc_ids=doc_ids)
