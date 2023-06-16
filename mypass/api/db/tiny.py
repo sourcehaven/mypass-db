@@ -112,7 +112,7 @@ def query_vault_entry():
         documents = read_vault_entries(uid, cond=cond, doc_ids=doc_ids)
     except UnsupportedMediaType:
         documents = read_vault_entries()
-    return {'documents': documents}, 200
+    return documents, 200
 
 
 @TinyDbApi.route('/api/db/tiny/vault/update', methods=['POST'])
