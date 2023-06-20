@@ -20,7 +20,7 @@ def login():
     blacklist.clear()
     son = request.json
     pw = son['pw']
-    logging.getLogger().debug('Creating non-fresh access token.')
+    logging.getLogger().debug('Creating fresh access token.')
     access_token = create_access_token(identity=pw, fresh=True)
     refresh_token = create_refresh_token(identity=pw)
     logging.getLogger().debug(

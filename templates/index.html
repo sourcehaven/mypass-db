@@ -68,8 +68,7 @@
 
           <div>
             <span class="sub-section-title">Description</span>
-            <!-- TODO: what does login do? -->
-            <p class="data-text">...</p>
+            <p class="data-text">Generates an access and a refresh token based on the provided pw parameter, and returns the tokens as a response to the client.</p>
           </div>
         </div>
       </div>
@@ -123,8 +122,7 @@
 
         <div>
           <span class="sub-section-title">Description</span>
-          <!-- TODO: what does refresh do? -->
-          <p class="data-text">...</p>
+          <p class="data-text">Handles a token refresh request by verifying the presence of a valid refresh token. It retrieves the identity associated with the refresh token, creates a new access token with the obtained identity (marked as non-fresh), and returns the new access token as a response.</p>
         </div>
       </div>
     </div>
@@ -168,8 +166,7 @@
 
         <div>
           <span class="sub-section-title">Description</span>
-          <!-- TODO: what does logout do? -->
-          <p class="data-text">...</p>
+          <p class="data-text">Handles a logout request by blacklisting the associated access token. It retrieves the token's ID ("jti"), adds it to a blacklist, and returns an appropriate response code based on the success or failure of the operation.</p>
         </div>
       </div>
     </div>
