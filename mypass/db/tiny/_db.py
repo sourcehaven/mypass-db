@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from tinydb import TinyDB
@@ -5,14 +6,23 @@ from tinydb import TinyDB
 DB_PATH = Path.home().joinpath('.mypass', 'db', 'tinydb', 'db.json')
 
 
-def tinydb():
-    if not DB_PATH.parent.exists():
-        DB_PATH.parent.mkdir(parents=True)
-    return TinyDB(DB_PATH)
+def tinydb(path: str | os.PathLike = None):
+    if path is None:
+        path = DB_PATH
+    if isinstance(path, str):
+        path = Path(path)
+
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True)
+    return TinyDB(path)
 
 
-def unlink():
-    path = Path(DB_PATH)
+def unlink(path: str | os.PathLike = None):
+    if path is None:
+        path = DB_PATH
+    if isinstance(path, str):
+        path = Path(path)
+
     if path.exists():
         if path.is_file():
             path.unlink()

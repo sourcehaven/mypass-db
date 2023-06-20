@@ -59,7 +59,7 @@ def query_master_pw():
     if uid is None:
         uid = user
     doc = read_master_password(uid)
-    _user = doc.pop('user', None)
+    doc.pop('user', None)
     logging.getLogger().debug(f'Read master password: {doc}')
     return doc, 200
 
