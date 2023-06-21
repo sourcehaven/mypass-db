@@ -16,6 +16,8 @@ class TinyDao(abc.ABC):
         self._storage = storage
         self._storage_args = args
         self._storage_kwargs = kwargs
+        if storage is not None:
+            self._storage_kwargs['storage'] = storage
 
     def init_db(self):
         if not self._path.parent.exists():
@@ -24,7 +26,7 @@ class TinyDao(abc.ABC):
 
     def get_connection(self):
         self.init_db()
-        return TinyDB(self._path, storage=self._storage, *self._storage_args, **self._storage_kwargs)
+        return TinyDB(self._path, *self._storage_args, **self._storage_kwargs)
 
     def unlink(self):
         unlink(self._path)
