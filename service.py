@@ -1,6 +1,7 @@
 import logging
 from argparse import ArgumentParser, Namespace
 from datetime import timedelta
+from pathlib import Path
 
 import waitress
 from flask import Flask
@@ -25,13 +26,15 @@ class MyPassArgs(Namespace):
 
 
 def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
+    db_path = Path.home().joinpath('.mypass', 'db', 'tinydb', 'db.json')
+
     app = Flask(__name__)
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
-    app.config['master_controller'] = MasterController()
-    app.config['vault_controller'] = VaultController()
+    app.config['master_controller'] = MasterController(path=db_path)
+    app.config['vault_controller'] = VaultController(path=db_path)
     app.config.from_object(__name__)
 
     # register api endpoints

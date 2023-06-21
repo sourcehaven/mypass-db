@@ -5,9 +5,11 @@ from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswords
 
 
 class MasterController:
-    def __init__(self, dao: MasterDao = None):
+    def __init__(self, dao: MasterDao = None, *args, **kwargs):
+        assert dao is None or (len(args) == 0 and len(kwargs) == 0), \
+            'When dao is specified, there should not be any arguments and/or keyword arguments present.'
         if dao is None:
-            dao = MasterDao()
+            dao = MasterDao(*args, **kwargs)
         self.dao = dao
 
     def create_master_password(self, user: str, token: str, pw: str, salt: str):

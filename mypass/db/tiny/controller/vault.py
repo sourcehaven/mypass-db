@@ -7,9 +7,11 @@ from mypass.utils.vault import UID_FIELD, create_query_with_uid, documents_as_di
 
 
 class VaultController:
-    def __init__(self, dao: VaultDao = None):
+    def __init__(self, dao: VaultDao = None, *args, **kwargs):
+        assert dao is None or (len(args) == 0 and len(kwargs) == 0), \
+            'When dao is specified, there should not be any arguments and/or keyword arguments present.'
         if dao is None:
-            dao = VaultDao()
+            dao = VaultDao(*args, **kwargs)
         self.dao = dao
 
     def create_vault_entry(
