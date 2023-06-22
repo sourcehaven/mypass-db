@@ -122,12 +122,13 @@ class VaultController:
             item = self.read_vault_entry(__uid, doc_id=doc_id, cond=cond)
             if item is not None:
                 if remove_keys is not None and PROTECTED_FIELDS in item:
-                    rm_protected_keys = list(set.difference(set(item.keys()), remove_keys))
-                    if len(rm_protected_keys) <= 0:
-                        rm_protected_keys = None
+                    rm_keys = list(set(remove_keys).intersection(set(item.keys())))
+                    remaining_protected_keys = list(set(item[PROTECTED_FIELDS]).difference(rm_keys))
+                    if len(remaining_protected_keys) <= 0:
+                        remove_keys = [PROTECTED_FIELDS, *remove_keys]
                     if fields is None:
                         fields = {}
-                    fields[PROTECTED_FIELDS] = rm_protected_keys
+                    fields[PROTECTED_FIELDS] = remaining_protected_keys
 
                 items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
             else:
@@ -135,12 +136,13 @@ class VaultController:
         else:
             item = self.read_vault_entry(__uid, doc_id=doc_id)
             if remove_keys is not None and PROTECTED_FIELDS in item:
-                rm_protected_keys = list(set.difference(set(item.keys()), remove_keys))
-                if len(rm_protected_keys) <= 0:
-                    rm_protected_keys = None
+                rm_keys = list(set(remove_keys).intersection(set(item.keys())))
+                remaining_protected_keys = list(set(item[PROTECTED_FIELDS]).difference(rm_keys))
+                if len(remaining_protected_keys) <= 0:
+                    remove_keys = [PROTECTED_FIELDS, *remove_keys]
                 if fields is None:
                     fields = {}
-                fields[PROTECTED_FIELDS] = rm_protected_keys
+                fields[PROTECTED_FIELDS] = remaining_protected_keys
             items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
 
         try:

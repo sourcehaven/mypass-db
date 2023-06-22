@@ -126,7 +126,8 @@ class TestTinyVaultController:
         entry_id1 = self.controller.create_vault_entry(item='first item', anyonim=True)
         assert_that(entry_id1).is_equal_to(1)
         entry_id2 = self.controller.create_vault_entry(
-            1, item='second item', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+            1, item='second item', pw='strong-pw', key='someProtectedKey', key2='other-protected',
+            _protected_fields=['pw', 'key'])
         assert_that(entry_id2).is_equal_to(2)
         entry_id3 = self.controller.create_vault_entry(1, some='some', _any='any')
         entry_id4 = self.controller.create_vault_entry(2)
@@ -152,12 +153,16 @@ class TestTinyVaultController:
     def test_update_vault_entry(self):
         doc1 = self.controller.read_vault_entry(doc_id=2)
         assert_that(doc1).contains_key('item', 'pw')
-        entry_id1 = self.controller.update_vault_entry(doc_id=2, remove_keys=['item', 'pw'])
+        entry_id1 = self.controller.update_vault_entry(doc_id=2, remove_keys=['item', 'pw', 'key2'])
         assert_that(entry_id1).is_equal_to(2)
         new_doc1 = self.controller.read_vault_entry(doc_id=2)
-        assert_that(new_doc1).does_not_contain_key('item', 'pw')
+        assert_that(new_doc1).does_not_contain_key('item', 'pw', 'key2')
+        assert_that(new_doc1).contains_key('key')
         if PROTECTED_FIELDS in new_doc1 and new_doc1[PROTECTED_FIELDS] is not None:
             assert_that(new_doc1).contains_key(*new_doc1[PROTECTED_FIELDS])
+        self.controller.update_vault_entry(doc_id=2, remove_keys=['pw', 'key'])
+        new_doc2 = self.controller.read_vault_entry(doc_id=2)
+        assert_that(new_doc2).does_not_contain_key(PROTECTED_FIELDS)
 
     @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
     def test_update_vault_entries(self):
