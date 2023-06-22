@@ -11,7 +11,7 @@ from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswords
 
 from . import _utils as utils
 
-
+# TODO: Should all write endpoints need fresh=True token?
 TinyDbApi = Blueprint('tinydb', __name__)
 
 
@@ -66,12 +66,12 @@ def query_master_pw():
 
 
 @TinyDbApi.route('/api/db/tiny/master/update', methods=['POST'])
-@jwt_required(fresh=True, optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
+@jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def update_master_pw():
     controller: MasterController = flask.current_app.config['master_controller']
     logging.getLogger().debug(f'Updating master password with params\n    {request.json}')
     user, token, pw, salt = request.json['user'], request.json['token'], request.json['pw'], request.json['salt']
-    doc_id = controller.update_master_password(user=user, token=token, pw=pw, salt=salt)
+    doc_id = controller.update_master_password(user_or_uid=user, token=token, pw=pw, salt=salt)
     logging.getLogger().debug(f'Updated master password with id: {doc_id}')
     return {'_id': doc_id}, 200
 

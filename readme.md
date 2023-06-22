@@ -22,3 +22,21 @@ controller functions if they can handle such parameters.
 4. Protected variables (which should be encrypted by the encryption service api)
 should end with two underscores `__`. This naming convention will signal the encryption
 api to decrypt those fields first, and only return afterward.
+
+## Run tests:
+
+> pytest tests
+
+## Run coverage:
+
+> pytest --cov-report html --cov=mypass tests
+
+Possible report options:
+ - html
+ - json
+ - lcov
+ - annotate
+
+To report to a specified file, you could use the following command:
+
+> pytest --cov-report html:.reports/coverage.html --cov=mypass tests

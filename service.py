@@ -12,6 +12,7 @@ from mypass import hooks
 from mypass.api import AuthApi, TinyDbApi
 from mypass.db.tiny import MasterController, VaultController
 from mypass.public import IndexTemplate
+from utils import hash_fn
 
 HOST = 'localhost'
 PORT = 5758
@@ -25,14 +26,18 @@ class MyPassArgs(Namespace):
     jwt_key: str
 
 
-def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
+def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
     db_path = Path.home().joinpath('.mypass', 'db', 'tinydb', 'db.json')
+
+    if api_key is not None:
+        api_key = hash_fn(api_key)
 
     app = Flask(__name__)
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+    app.config['API_KEY'] = api_key
     app.config['master_controller'] = MasterController(path=db_path)
     app.config['vault_controller'] = VaultController(path=db_path)
     app.config.from_object(__name__)
@@ -69,10 +74,13 @@ if __name__ == '__main__':
     arg_parser.add_argument(
         '-k', '--jwt-key', type=str, default=JWT_KEY,
         help=f'specifies the secret jwt key by the application, defaults to "{JWT_KEY}" (should be changed)')
+    arg_parser.add_argument(
+        '-P', '--api-key', type=str, default=None,
+        help=f'specifies the secret api key by the application, defaults to "{None}" (should be set)')
 
     args = arg_parser.parse_args(namespace=MyPassArgs)
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.ERROR)
-    run(debug=args.debug, host=args.host, port=args.port, jwt_key=args.jwt_key)
+    run(debug=args.debug, host=args.host, port=args.port, jwt_key=args.jwt_key, api_key=args.api_key)

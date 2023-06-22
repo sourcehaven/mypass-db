@@ -2,12 +2,16 @@ from typing import Mapping, Iterable
 
 from mypass.db.tiny.dao import VaultDao
 from mypass.exceptions import EmptyRecordInsertionError
-from mypass.utils.vault import UID_FIELD, create_query_with_uid, documents_as_dict, filter_doc_ids, document_as_dict, \
-    ID_FIELD, check_uid
+from mypass.utils.tinydb import UID_FIELD, ID_FIELD
+from mypass.utils.tinydb import create_query_with_uid, documents_as_dict, filter_doc_ids, document_as_dict, check_uid
+
+_T_DAO = VaultDao
 
 
 class VaultController:
-    def __init__(self, dao: VaultDao = None, *args, **kwargs):
+    table = _T_DAO.table
+
+    def __init__(self, dao: _T_DAO = None, *args, **kwargs):
         assert dao is None or (len(args) == 0 and len(kwargs) == 0), \
             'When dao is specified, there should not be any arguments and/or keyword arguments present.'
         if dao is None:

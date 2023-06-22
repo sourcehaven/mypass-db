@@ -1,31 +1,34 @@
 import logging
 import os
 
+import flask
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 
 from mypass.persistence.blacklist.memory import blacklist
+from mypass.utils import hash_fn
 
 AuthApi = Blueprint('auth', __name__)
+
+__STATE = {'logged_in': False}
 
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
 def login():
-    # TODO: see if api has already logged in -> what to do?
-    #  - force logout first
-    #  - invalidate previous user
-    #  - warn and renew tokens
-    logging.getLogger().debug('Clearing blacklists.')
     logging.getLogger().debug(f'Signing in user with\n    {request.json}')
-    blacklist.clear()
     son = request.json
     pw = son['pw']
-    logging.getLogger().debug('Creating fresh access token.')
-    access_token = create_access_token(identity=pw, fresh=True)
-    refresh_token = create_refresh_token(identity=pw)
-    logging.getLogger().debug(
-        f'Returning access and refresh tokens\n    {dict(access_token="*****", refresh_token="*****")}')
-    return {'access_token': access_token, 'refresh_token': refresh_token}, 201
+    key = flask.current_app.config['API_KEY']
+    if key is None or hash_fn(pw) == key:
+        logging.getLogger().debug('Clearing blacklists.')
+        blacklist.clear()
+        logging.getLogger().debug('Creating fresh access token.')
+        access_token = create_access_token(identity=pw, fresh=True)
+        refresh_token = create_refresh_token(identity=pw)
+        logging.getLogger().debug(
+            f'Returning access and refresh tokens\n    {dict(access_token="*****", refresh_token="*****")}')
+        return {'access_token': access_token, 'refresh_token': refresh_token}, 201
+    return {'msg': 'NOT AUTHORIZED :: Wrong password provided. Use the secret api key you provided.'}, 401
 
 
 @AuthApi.route('/api/auth/refresh', methods=['POST'])
@@ -47,6 +50,7 @@ def logout():
         jti = get_jwt()['jti']
         logging.getLogger().debug(f'Blacklisting token: {jti}.')
         blacklist.add(jti)
+        # __STATE['logged_in'] = False
         return '', 204
     except KeyError:
         return '', 409

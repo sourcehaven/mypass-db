@@ -1,1 +1,2 @@
-from .vault import document_as_dict, documents_as_dict
+from .tinydb import document_as_dict, documents_as_dict
+from .crypto import hash_fn
