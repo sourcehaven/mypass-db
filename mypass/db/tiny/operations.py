@@ -5,7 +5,7 @@ def delete_keys(keys: Iterable[str], ignore_keyerr: bool = True):
     keys = set(keys)
 
     def operation(document):
-        for k in document:
+        for k in document.copy():
             if k in keys:
                 try:
                     del document[k]

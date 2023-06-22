@@ -1,3 +1,7 @@
+from typing import Mapping
+
+# noinspection PyPackageRequirements
+import assertpy
 # noinspection PyPackageRequirements
 import pytest
 # noinspection PyPackageRequirements
@@ -5,7 +9,24 @@ from assertpy import assert_that
 
 from mypass.db.tiny import MasterController, MasterDao, VaultController, VaultDao
 from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, MultipleMasterPasswordsError
+from mypass.utils.tinydb import UID_FIELD, PROTECTED_FIELDS
 from tests._utils import AtomicMemoryStorage, persistent_storage
+
+
+@pytest.fixture(scope='function')
+def patch_document_as_dict(monkeypatch):
+    from mypass.utils import tinydb
+
+    # noinspection PyUnusedLocal
+    def new_document_as_dict(document, keep_id=True, remove_special=False):
+        return tinydb.document_as_dict(document, keep_id=True, remove_special=False)
+
+    # noinspection PyUnusedLocal
+    def new_documents_as_dict(documents, keep_id=True, remove_special=False):
+        return tinydb.documents_as_dict(documents, keep_id=True, remove_special=False)
+
+    monkeypatch.setattr('mypass.db.tiny.controller.vault.document_as_dict', new_document_as_dict)
+    monkeypatch.setattr('mypass.db.tiny.controller.vault.documents_as_dict', new_documents_as_dict)
 
 
 class _CorruptedStorage:
@@ -93,6 +114,67 @@ class TestTinyMasterController:
 
 
 class TestTinyVaultController:
+    def test_magic_init(self):
+        VaultController(dao=VaultDao(storage=AtomicMemoryStorage))
+        VaultController(storage=AtomicMemoryStorage)
+        assert_that(MasterController).raises(AssertionError).when_called_with(
+            dao=VaultDao(storage=AtomicMemoryStorage),
+            storage=AtomicMemoryStorage)
+
+    @pytest.mark.dependency()
+    def test_create_vault_entry(self):
+        entry_id1 = self.controller.create_vault_entry(item='first item', anyonim=True)
+        assert_that(entry_id1).is_equal_to(1)
+        entry_id2 = self.controller.create_vault_entry(
+            1, item='second item', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+        assert_that(entry_id2).is_equal_to(2)
+        entry_id3 = self.controller.create_vault_entry(1, some='some', _any='any')
+        entry_id4 = self.controller.create_vault_entry(2)
+        assert_that(entry_id3).is_not_equal_to(entry_id4)
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_read_vault_entry(self, patch_document_as_dict):
+        doc1 = self.controller.read_vault_entry(doc_id=1)
+        assert_that(doc1).is_instance_of(Mapping)
+        if UID_FIELD in doc1 and doc1[UID_FIELD] is not None:
+            assertpy.fail(f'Expected doc to NOT contain a valid {UID_FIELD}.')
+        doc2 = self.controller.read_vault_entry(doc_id=2)
+        assert_that(doc2).is_instance_of(Mapping)
+        assert_that(doc2).contains_key(UID_FIELD)
+        assert_that(doc2[UID_FIELD]).is_equal_to(1)
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_read_vault_entries(self, patch_document_as_dict):
+        docs1 = self.controller.read_vault_entries(1)
+        assert_that(all(UID_FIELD in doc for doc in docs1)).is_true()
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_update_vault_entry(self):
+        doc1 = self.controller.read_vault_entry(doc_id=2)
+        assert_that(doc1).contains_key('item', 'pw')
+        entry_id1 = self.controller.update_vault_entry(doc_id=2, remove_keys=['item', 'pw'])
+        assert_that(entry_id1).is_equal_to(2)
+        new_doc1 = self.controller.read_vault_entry(doc_id=2)
+        assert_that(new_doc1).does_not_contain_key('item', 'pw')
+        if PROTECTED_FIELDS in new_doc1 and new_doc1[PROTECTED_FIELDS] is not None:
+            assert_that(new_doc1).contains_key(*new_doc1[PROTECTED_FIELDS])
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_update_vault_entries(self):
+        pass
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_delete_vault_entry(self):
+        entry_id1 = self.controller.create_vault_entry(delthis='first item', anyonim=True)
+        entry_id2 = self.controller.create_vault_entry(
+            1, item='delete this', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+
+    @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
+    def test_delete_vault_entries(self):
+        entry_id1 = self.controller.create_vault_entry(delthis='first item', anyonim=True)
+        entry_id2 = self.controller.create_vault_entry(
+            1, item='delete this', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+
     @classmethod
     def setup_class(cls):
         dao = VaultDao(storage=AtomicMemoryStorage)

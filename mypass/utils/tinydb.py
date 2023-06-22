@@ -5,6 +5,7 @@ from tinydb.table import Document
 from mypass.db import create_query
 
 ID_FIELD = '_id'
+PROTECTED_FIELDS = '_protected_fields'
 UID_FIELD = '_UID'
 
 

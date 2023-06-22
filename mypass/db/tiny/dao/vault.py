@@ -45,7 +45,9 @@ class VaultDao(TinyDao):
         assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
         with self.get_connection() as conn:
             t = conn.table(VaultDao.table)
-            updated_ids = t.update(fields=fields, cond=cond, doc_ids=doc_ids)
+            updated_ids = []
+            if fields is not None:
+                updated_ids = t.update(fields=fields, cond=cond, doc_ids=doc_ids)
             if remove_keys is not None:
                 removed_key_ids = t.update(ops.delete_keys(remove_keys), cond=cond, doc_ids=doc_ids)
             return list(set.union(set(updated_ids), set(removed_key_ids)))

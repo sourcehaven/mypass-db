@@ -2,7 +2,7 @@ from typing import Mapping, Iterable
 
 from mypass.db.tiny.dao import VaultDao
 from mypass.exceptions import EmptyRecordInsertionError
-from mypass.utils.tinydb import UID_FIELD, ID_FIELD
+from mypass.utils.tinydb import UID_FIELD, ID_FIELD, PROTECTED_FIELDS
 from mypass.utils.tinydb import create_query_with_uid, documents_as_dict, filter_doc_ids, document_as_dict, check_uid
 
 _T_DAO = VaultDao
@@ -60,7 +60,7 @@ class VaultController:
         items = self.dao.read(cond=cond)
         return documents_as_dict(filter_doc_ids(items, doc_ids), keep_id=True)
 
-    def read_vault_entry(self, __uid: int | str = None, *, cond: dict = None, doc_id: int = None):
+    def read_vault_entry(self, __uid: int = None, *, cond: dict = None, doc_id: int = None):
         check_uid(__uid)
         assert doc_id is not None or cond is not None, \
             'Querying a specific password without either `doc_id` or `cond` is meaningless.'
@@ -76,29 +76,39 @@ class VaultController:
             return None
         else:
             item = self.dao.read_one(cond=cond)
-        return document_as_dict(item, keep_id=True)
+            if item is None:
+                return None
+            return document_as_dict(item, keep_id=True)
 
     def update_vault_entries(
             self,
-            __uid: int | str = None,
+            __uid: int = None,
             fields: Mapping = None,
             *,
             cond: dict = None,
             doc_ids: Iterable[int] = None,
             remove_keys: Iterable[int] = None
     ):
-        check_uid(__uid)
-        cond = create_query_with_uid(__uid, cond)
-        if doc_ids is None:
-            items = self.dao.update(fields, cond=cond, remove_keys=remove_keys)
-        else:
-            docs = self.read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
-            items = self.dao.update(fields, doc_ids=[d[ID_FIELD] for d in docs], remove_keys=remove_keys)
+        if remove_keys is None or len(list(remove_keys)) <= 0:
+            check_uid(__uid)
+            cond = create_query_with_uid(__uid, cond)
+            if doc_ids is None:
+                items = self.dao.update(fields, cond=cond)
+            else:
+                docs = self.read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
+                items = self.dao.update(fields, doc_ids=[d[ID_FIELD] for d in docs])
+            return items
+
+        remove_keys: Iterable[int] | None
+        entries = self.read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
+        items: list[int] = list(filter(lambda x: x is not None, [
+            self.update_vault_entry(__uid, fields, doc_id=entry['_id'], remove_keys=remove_keys)
+            for entry in entries]))
         return items
 
     def update_vault_entry(
             self,
-            __uid: int | str = None,
+            __uid: int = None,
             fields: Mapping = None,
             *,
             cond: dict = None,
@@ -109,20 +119,36 @@ class VaultController:
         cond = create_query_with_uid(__uid, cond)
         if cond is not None:
             # check the conditions first, and only update matching items
-            self.read_vault_entry()
             item = self.read_vault_entry(__uid, doc_id=doc_id, cond=cond)
             if item is not None:
+                if remove_keys is not None and PROTECTED_FIELDS in item:
+                    rm_protected_keys = list(set.difference(set(item.keys()), remove_keys))
+                    if len(rm_protected_keys) <= 0:
+                        rm_protected_keys = None
+                    if fields is None:
+                        fields = {}
+                    fields[PROTECTED_FIELDS] = rm_protected_keys
+
                 items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
             else:
                 items = []
         else:
+            item = self.read_vault_entry(__uid, doc_id=doc_id)
+            if remove_keys is not None and PROTECTED_FIELDS in item:
+                rm_protected_keys = list(set.difference(set(item.keys()), remove_keys))
+                if len(rm_protected_keys) <= 0:
+                    rm_protected_keys = None
+                if fields is None:
+                    fields = {}
+                fields[PROTECTED_FIELDS] = rm_protected_keys
             items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
+
         try:
             return items[0]
         except IndexError:
             return None
 
-    def delete_vault_entries(self, __uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
+    def delete_vault_entries(self, __uid: int = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
         check_uid(__uid)
         cond = create_query_with_uid(__uid, cond)
         if doc_ids is None:
@@ -132,7 +158,7 @@ class VaultController:
             items = self.dao.delete(doc_ids=[d[ID_FIELD] for d in docs])
         return items
 
-    def delete_vault_entry(self, __uid: int | str = None, *, cond: dict = None, doc_id: int):
+    def delete_vault_entry(self, __uid: int = None, *, cond: dict = None, doc_id: int):
         check_uid(__uid)
         cond = create_query_with_uid(__uid, cond)
         if cond is not None:
