@@ -46,10 +46,10 @@ class TinyDao:
         if self._path is not None:
             unlink(self._path)
 
-    def create(self, entity):
+    def create(self, entity: Mapping):
         with self.get_connection() as conn:
             t = conn.table(self.table)
-            return t.insert(**entity)
+            return t.insert(entity)
 
     def read_one(self, *, cond: QueryLike = None, doc_id: int = None):
         assert doc_id is None or cond is None, 'Specifying both `doc_id` and `cond` is invalid.'
@@ -72,21 +72,15 @@ class TinyDao:
 
     def update(
             self,
-            entity: Mapping = None,
+            entity: Mapping,
             *,
             cond: QueryLike = None,
-            doc_ids: Iterable[int] = None,
-            remove_keys: Iterable[str] = None
+            doc_ids: Iterable[int] = None
     ):
         assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
         with self.get_connection() as conn:
             t = conn.table(self.table)
-            updated_ids = []
-            if entity is not None:
-                updated_ids = t.update(fields=entity, cond=cond, doc_ids=doc_ids)
-            if remove_keys is not None:
-                removed_key_ids = t.update(ops.delete_keys(remove_keys), cond=cond, doc_ids=doc_ids)
-            return list(set.union(set(updated_ids), set(removed_key_ids)))
+            return t.update(ops.update(fields=entity), cond=cond, doc_ids=doc_ids)
 
     def delete(self, *, cond: QueryLike = None, doc_ids: Iterable[int] = None):
         assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'

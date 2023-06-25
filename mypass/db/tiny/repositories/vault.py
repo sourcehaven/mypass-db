@@ -1,24 +1,17 @@
-# TODO: FILE CONTENTS WILL BE HEAVILY MODIFIED!
-
 from typing import Mapping, Iterable
 
-from mypass.db.tiny.dao import VaultDao
+from mypass.db.tiny import TinyDao, TinyRepository
 from mypass.exceptions import EmptyRecordInsertionError
+from mypass.types import PasswordVaultEntity
 from mypass.utils.tinydb import UID_FIELD, ID_FIELD, PROTECTED_FIELDS
 from mypass.utils.tinydb import create_query_with_uid, documents_as_dict, filter_doc_ids, document_as_dict, check_uid
 
-_T_DAO = VaultDao
+_T = PasswordVaultEntity
 
 
-class VaultRepository:
-    table = _T_DAO.table
-
-    def __init__(self, dao: _T_DAO = None, *args, **kwargs):
-        assert dao is None or (len(args) == 0 and len(kwargs) == 0), \
-            'When dao is specified, there should not be any arguments and/or keyword arguments present.'
-        if dao is None:
-            dao = VaultDao(*args, **kwargs)
-        self.dao = dao
+class VaultTinyRepository(TinyRepository[int, _T]):
+    def __init__(self, dao: TinyDao = None, *args, **kwargs):
+        super().__init__(dao, *args, **kwargs)
 
     def create_vault_entry(
             self,
@@ -85,12 +78,12 @@ class VaultRepository:
     def update_vault_entries(
             self,
             __uid: int = None,
-            fields: Mapping = None,
             *,
+            fields: Mapping,
             cond: dict = None,
-            doc_ids: Iterable[int] = None,
-            remove_keys: Iterable[int] = None
+            doc_ids: Iterable[int] = None
     ):
+        # TODO: implement remove keys -> dao has changed
         if remove_keys is None or len(list(remove_keys)) <= 0:
             check_uid(__uid)
             cond = create_query_with_uid(__uid, cond)
@@ -111,12 +104,12 @@ class VaultRepository:
     def update_vault_entry(
             self,
             __uid: int = None,
-            fields: Mapping = None,
             *,
+            fields: Mapping,
             cond: dict = None,
-            doc_id: int,
-            remove_keys: Iterable[str] = None
+            doc_id: int
     ):
+        # TODO: implement remove keys -> dao has changed
         check_uid(__uid)
         cond = create_query_with_uid(__uid, cond)
         if cond is not None:
@@ -132,7 +125,7 @@ class VaultRepository:
                         fields = {}
                     fields[PROTECTED_FIELDS] = remaining_protected_keys
 
-                items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
+                items = self.dao.update(fields, doc_ids=[doc_id])
             else:
                 items = []
         else:
@@ -145,7 +138,7 @@ class VaultRepository:
                 if fields is None:
                     fields = {}
                 fields[PROTECTED_FIELDS] = remaining_protected_keys
-            items = self.dao.update(fields, doc_ids=[doc_id], remove_keys=remove_keys)
+            items = self.dao.update(fields, doc_ids=[doc_id])
 
         try:
             return items[0]

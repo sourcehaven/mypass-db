@@ -1,18 +1,17 @@
 from typing import Optional, Generic, TypeVar
 
-from mypass.types.elastic import ElasticClass
-from mypass.utils import GetSetDescriptor, GetDescriptor
-
+from mypass.utils import GetSetDescriptor
+from .elastic import ElasticClass
 
 T = TypeVar('T')
 
 
 def entity(table: str):
     def entity_wrapper(cls: Generic[T]):
-        cls.__table = table
         cls.id = GetSetDescriptor('__id')
-        cls.table = GetDescriptor('__table')
+        cls.table = table
         return cls
+
     return entity_wrapper
 
 

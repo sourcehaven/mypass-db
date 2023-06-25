@@ -7,7 +7,6 @@ import pytest
 # noinspection PyPackageRequirements
 from assertpy import assert_that
 
-from mypass.db.tiny import MasterRepository, MasterDao, VaultRepository, VaultDao
 from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, MultipleMasterPasswordsError
 from mypass.utils.tinydb import UID_FIELD, PROTECTED_FIELDS
 from tests._utils import AtomicMemoryStorage, persistent_storage
