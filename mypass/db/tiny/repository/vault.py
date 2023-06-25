@@ -1,3 +1,5 @@
+# TODO: FILE CONTENTS WILL BE HEAVILY MODIFIED!
+
 from typing import Mapping, Iterable
 
 from mypass.db.tiny.dao import VaultDao
@@ -8,7 +10,7 @@ from mypass.utils.tinydb import create_query_with_uid, documents_as_dict, filter
 _T_DAO = VaultDao
 
 
-class VaultController:
+class VaultRepository:
     table = _T_DAO.table
 
     def __init__(self, dao: _T_DAO = None, *args, **kwargs):

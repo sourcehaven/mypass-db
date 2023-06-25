@@ -6,7 +6,7 @@ from flask import Blueprint, request
 from flask_jwt_extended import jwt_required
 from werkzeug.exceptions import UnsupportedMediaType
 
-from mypass.db.tiny import MasterController, VaultController
+from mypass.db.tiny import MasterRepository, VaultRepository
 from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError
 
 from . import _utils as utils
@@ -37,7 +37,7 @@ def empty_record_insertion_handler(err):
 @TinyDbApi.route('/api/db/tiny/master/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def create_master_pw():
-    controller: MasterController = flask.current_app.config['master_controller']
+    controller: MasterRepository = flask.current_app.config['master_controller']
     request_obj = request.json
     logging.getLogger().debug(f'Creating master password with params\n    {request_obj}')
     user, token, pw, salt = request_obj['user'], request_obj['token'], request_obj['pw'], request_obj['salt']
@@ -49,7 +49,7 @@ def create_master_pw():
 @TinyDbApi.route('/api/db/tiny/master/read', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_master_pw():
-    controller: MasterController = flask.current_app.config['master_controller']
+    controller: MasterRepository = flask.current_app.config['master_controller']
     request_obj = request.json
     logging.getLogger().debug(f'Reading master password with params\n    {request_obj}')
     user = request_obj.pop('user', None)
@@ -68,7 +68,7 @@ def query_master_pw():
 @TinyDbApi.route('/api/db/tiny/master/update', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def update_master_pw():
-    controller: MasterController = flask.current_app.config['master_controller']
+    controller: MasterRepository = flask.current_app.config['master_controller']
     logging.getLogger().debug(f'Updating master password with params\n    {request.json}')
     user, token, pw, salt = request.json['user'], request.json['token'], request.json['pw'], request.json['salt']
     doc_id = controller.update_master_password(user_or_uid=user, token=token, pw=pw, salt=salt)
@@ -79,7 +79,7 @@ def update_master_pw():
 @TinyDbApi.route('/api/db/tiny/vault/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def new_vault_entry():
-    controller: VaultController = flask.current_app.config['vault_controller']
+    controller: VaultRepository = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
     logging.getLogger().debug(f'Creating password inside user vault with params\n    {request_obj}')
     # see if the main user is passed along the request
@@ -98,7 +98,7 @@ def new_vault_entry():
 @TinyDbApi.route('/api/db/tiny/vault/read', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_vault_entry():
-    controller: VaultController = flask.current_app.config['vault_controller']
+    controller: VaultRepository = flask.current_app.config['vault_controller']
     try:
         request_obj = dict(request.json)
         doc_id = request_obj.pop('_id', None)
@@ -122,7 +122,7 @@ def query_vault_entry():
 @TinyDbApi.route('/api/db/tiny/vault/update', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def change_vault_entry():
-    controller: VaultController = flask.current_app.config['vault_controller']
+    controller: VaultRepository = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
     doc_id = request_obj.pop('_id', None)
     doc_ids = request_obj.pop('_ids', None)
@@ -149,7 +149,7 @@ def change_vault_entry():
 @TinyDbApi.route('/api/db/tiny/vault/delete', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def remove_vault_entry():
-    controller: VaultController = flask.current_app.config['vault_controller']
+    controller: VaultRepository = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
     doc_id = request_obj.pop('_id', None)
     doc_ids = request_obj.pop('_ids', None)

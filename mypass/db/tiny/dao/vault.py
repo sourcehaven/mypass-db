@@ -1,3 +1,5 @@
+# TODO: FILE CONTENTS WILL DELETED!
+
 from typing import Iterable, Mapping
 
 from tinydb.queries import QueryLike
@@ -15,7 +17,7 @@ class VaultDao(TinyDao):
             t = conn.table(VaultDao.table)
             return t.insert(kwargs)
 
-    def read_one(self, *, doc_id: int = None, cond: QueryLike = None):
+    def read_one(self, *, cond: QueryLike = None, doc_id: int = None):
         assert doc_id is None or cond is None, 'Specifying both `doc_id` and `cond` is invalid.'
         assert doc_id is not None or cond is not None, 'Specify either `doc_id` or `cond`.'
         with self.get_connection() as conn:

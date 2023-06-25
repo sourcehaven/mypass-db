@@ -1,9 +1,14 @@
-from typing import Iterable
+# TODO: FILE CONTENTS WILL DELETED!
+
+from typing import Iterable, TypedDict, NotRequired
 
 from tinydb.queries import QueryLike
 from tinydb.table import Document
 
 from mypass.db.tiny._dao import TinyDao
+
+
+Update = TypedDict('Update', {'token': NotRequired[str], 'pw': NotRequired[str], 'salt': NotRequired[str]})
 
 
 class MasterDao(TinyDao):
@@ -33,11 +38,14 @@ class MasterDao(TinyDao):
                 return t.search(cond)
             return t.all()
 
-    def update(self, token: str, pw: str, salt: str, *, cond: QueryLike = None, doc_ids: Iterable[int] = None):
+    def update(self, fields: Update = None, *, cond: QueryLike = None, doc_ids: Iterable[int] = None):
         assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'
         with self.get_connection() as conn:
             t = conn.table(MasterDao.table)
-            return t.update(fields={'token': token, 'pw': pw, 'salt': salt}, cond=cond, doc_ids=doc_ids)
+            updated_ids = []
+            if fields is not None:
+                updated_ids = t.update(fields=fields, cond=cond, doc_ids=doc_ids)
+            return updated_ids
 
     def delete(self, *, cond: QueryLike = None, doc_ids: Iterable[int] = None):
         assert doc_ids is None or cond is None, 'Specifying both `doc_ids` and `cond` is invalid.'

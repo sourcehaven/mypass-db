@@ -7,7 +7,7 @@ import pytest
 # noinspection PyPackageRequirements
 from assertpy import assert_that
 
-from mypass.db.tiny import MasterController, MasterDao, VaultController, VaultDao
+from mypass.db.tiny import MasterRepository, MasterDao, VaultRepository, VaultDao
 from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, MultipleMasterPasswordsError
 from mypass.utils.tinydb import UID_FIELD, PROTECTED_FIELDS
 from tests._utils import AtomicMemoryStorage, persistent_storage
@@ -31,17 +31,17 @@ def patch_document_as_dict(monkeypatch):
 
 class _CorruptedStorage:
     def __enter__(self):
-        persistent_storage[MasterController.table]['4'] = {'user': 'my-user', 'pw': 'corrupt-pw', 'corruption': 42}
+        persistent_storage[MasterRepository.table]['4'] = {'user': 'my-user', 'pw': 'corrupt-pw', 'corruption': 42}
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        del persistent_storage[MasterController.table]['4']
+        del persistent_storage[MasterRepository.table]['4']
 
 
 class TestTinyMasterController:
     def test_magic_init(self):
-        MasterController(dao=MasterDao(storage=AtomicMemoryStorage))
-        MasterController(storage=AtomicMemoryStorage)
-        assert_that(MasterController).raises(AssertionError).when_called_with(
+        MasterRepository(dao=MasterDao(storage=AtomicMemoryStorage))
+        MasterRepository(storage=AtomicMemoryStorage)
+        assert_that(MasterRepository).raises(AssertionError).when_called_with(
             dao=MasterDao(storage=AtomicMemoryStorage),
             storage=AtomicMemoryStorage)
 
@@ -106,7 +106,7 @@ class TestTinyMasterController:
     @classmethod
     def setup_class(cls):
         dao = MasterDao(storage=AtomicMemoryStorage)
-        cls.controller = MasterController(dao=dao)
+        cls.controller = MasterRepository(dao=dao)
 
     @classmethod
     def teardown_class(cls):
@@ -115,9 +115,9 @@ class TestTinyMasterController:
 
 class TestTinyVaultController:
     def test_magic_init(self):
-        VaultController(dao=VaultDao(storage=AtomicMemoryStorage))
-        VaultController(storage=AtomicMemoryStorage)
-        assert_that(MasterController).raises(AssertionError).when_called_with(
+        VaultRepository(dao=VaultDao(storage=AtomicMemoryStorage))
+        VaultRepository(storage=AtomicMemoryStorage)
+        assert_that(MasterRepository).raises(AssertionError).when_called_with(
             dao=VaultDao(storage=AtomicMemoryStorage),
             storage=AtomicMemoryStorage)
 
@@ -166,24 +166,26 @@ class TestTinyVaultController:
 
     @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
     def test_update_vault_entries(self):
-        pass
+        assertpy.fail('No tests yet. :(')
 
     @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
     def test_delete_vault_entry(self):
         entry_id1 = self.controller.create_vault_entry(delthis='first item', anyonim=True)
         entry_id2 = self.controller.create_vault_entry(
             1, item='delete this', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+        assertpy.fail('No tests yet. :(')
 
     @pytest.mark.dependency(depends=['TestTinyVaultController::test_create_vault_entry'])
     def test_delete_vault_entries(self):
         entry_id1 = self.controller.create_vault_entry(delthis='first item', anyonim=True)
         entry_id2 = self.controller.create_vault_entry(
             1, item='delete this', pw='strong-pw', key='someProtectedKey', _protected_fields=['pw', 'key'])
+        assertpy.fail('No tests yet. :(')
 
     @classmethod
     def setup_class(cls):
         dao = VaultDao(storage=AtomicMemoryStorage)
-        cls.controller = VaultController(dao=dao)
+        cls.controller = VaultRepository(dao=dao)
 
     @classmethod
     def teardown_class(cls):

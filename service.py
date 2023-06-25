@@ -10,9 +10,10 @@ from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import hooks
 from mypass.api import AuthApi, TinyDbApi
-from mypass.db.tiny import MasterController, VaultController
+from mypass.db.tiny import MasterRepository, VaultRepository
 from mypass.public import IndexTemplate
-from utils import hash_fn
+from mypass.utils import hash_fn
+
 
 HOST = 'localhost'
 PORT = 5758
@@ -38,8 +39,8 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
     app.config['API_KEY'] = api_key
-    app.config['master_controller'] = MasterController(path=db_path)
-    app.config['vault_controller'] = VaultController(path=db_path)
+    app.config['master_controller'] = MasterRepository(path=db_path)
+    app.config['vault_controller'] = VaultRepository(path=db_path)
     app.config.from_object(__name__)
 
     # register api endpoints
