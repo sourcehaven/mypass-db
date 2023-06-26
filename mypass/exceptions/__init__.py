@@ -1,2 +1,2 @@
 from .db import DbError, MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError, \
-    UserNotExistsError, RecordNotFoundError, InvalidUpdateError
+    UserNotExistsError, RecordNotFoundError, InvalidUpdateError, RequiresIdError

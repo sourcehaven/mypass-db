@@ -25,8 +25,14 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
 
     @abc.abstractmethod
     def create(self, entity: _T) -> _ID:
-        """Saves the specified entity inside an arbitrary db implementation."""
-        ...
+        """
+        Saves the specified entity inside an arbitrary db implementation.
+        Implementations requiring an id to be given on creation,
+        should raise RequiresIdError, if id is not given with the entity.
+
+        Raises:
+            RequiresIdError: raises only if implementation needs an id to be created manually.
+        """
 
     @abc.abstractmethod
     def find_one(self, entity: _T) -> Optional[_T]:

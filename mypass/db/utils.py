@@ -1,8 +1,9 @@
 from typing import Literal, Callable, Any, TypeVar, Iterable
 
-from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, InvalidUpdateError
+from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, InvalidUpdateError, RequiresIdError
 from mypass.types import MasterEntity, VaultEntity
 from .repository import CrudRepository
+from ..utils import gen_uuid
 
 
 def create_query_all(query_like: dict):
@@ -29,11 +30,13 @@ class MasterDbSupport:
     def __init__(self, repo: CrudRepository):
         self.repo = repo
 
-    def create_master_password(self, entity: MasterEntity):
+    def create_master_password(self, entity: MasterEntity) -> None:
         item = self.repo.find_one(entity=MasterEntity(user=entity.user))
         if item is None:
-            self.repo.create(entity=entity)
-            return None
+            try:
+                self.repo.create(entity=entity)
+            except RequiresIdError:
+                entity.id = gen_uuid(self.repo.id_cls.__class__.__name__)
         raise MasterPasswordExistsError('Trying to store multiple master passwords for the same user.')
 
     def read_master_password(self, user_or_uid):
@@ -48,7 +51,7 @@ class MasterDbSupport:
         pw: str = item.pw
         return pw
 
-    def update_master_password(self, user_or_uid, update: MasterEntity):
+    def update_master_password(self, user_or_uid, update: MasterEntity) -> None:
         if 'user' in update or 'token' in update:
             raise InvalidUpdateError('User and master token cannot be updated inside master vault.')
         if isinstance(user_or_uid, self.repo.id_cls):
@@ -58,7 +61,6 @@ class MasterDbSupport:
                 crit=MasterEntity(user=user_or_uid), update=MasterEntity(user=user_or_uid))
         else:
             raise TypeError(f'Parameter user_or_uid should be either of type {str} or {self.repo.id_cls}.')
-        return None
 
 
 class VaultDbSupport:

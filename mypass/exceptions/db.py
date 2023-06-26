@@ -24,3 +24,7 @@ class UserNotExistsError(DbError):
 
 class RecordNotFoundError(DbError):
     pass
+
+
+class RequiresIdError(DbError):
+    pass
