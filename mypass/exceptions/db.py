@@ -2,6 +2,10 @@ class DbError(RuntimeError):
     pass
 
 
+class InvalidUpdateError(DbError):
+    pass
+
+
 class MasterPasswordExistsError(DbError):
     pass
 

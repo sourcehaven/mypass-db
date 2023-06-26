@@ -14,7 +14,6 @@ from mypass.db.tiny import MasterTinyRepository, VaultTinyRepository
 from mypass.public import IndexTemplate
 from mypass.utils import hash_fn
 
-
 HOST = 'localhost'
 PORT = 5758
 JWT_KEY = 'sourcehaven-db'

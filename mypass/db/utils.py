@@ -1,8 +1,8 @@
-from typing import Literal, Callable, Any, TypeVar, Mapping, Iterable
+from typing import Literal, Callable, Any, TypeVar, Iterable
 
-from mypass.db import CrudRepository
-from mypass.exceptions import MasterPasswordExistsError
-from mypass.types import MasterVaultEntity
+from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, InvalidUpdateError
+from mypass.types import MasterEntity, VaultEntity
+from .repository import CrudRepository
 
 
 def create_query_all(query_like: dict):
@@ -25,64 +25,74 @@ def create_query(query_like: dict, logic: Literal['and', 'or']) -> Callable[[Any
 _T = TypeVar('_T')
 
 
-class DbSupport:
+class MasterDbSupport:
     def __init__(self, repo: CrudRepository):
         self.repo = repo
 
-    def create_master_password(self, entity: MasterVaultEntity):
-        item = self.repo.find(entity=MasterVaultEntity(user=entity.user))
+    def create_master_password(self, entity: MasterEntity):
+        item = self.repo.find_one(entity=MasterEntity(user=entity.user))
         if item is None:
-            return self.repo.create(entity=entity)
+            self.repo.create(entity=entity)
+            return None
         raise MasterPasswordExistsError('Trying to store multiple master passwords for the same user.')
 
-    def read_master_password(self, user_or_uid: str | int) -> _T:
+    def read_master_password(self, user_or_uid):
+        if isinstance(user_or_uid, self.repo.id_cls):
+            item: MasterEntity = self.repo.find_by_id(user_or_uid)
+        elif isinstance(user_or_uid, str):
+            item = self.repo.find_one(entity=MasterEntity(user=user_or_uid))
+        else:
+            raise TypeError(f'Parameter user_or_uid should be either of type {str} or {self.repo.id_cls}.')
+        if item is None:
+            raise UserNotExistsError(f'User with id {user_or_uid} could not be found.')
+        pw: str = item.pw
+        return pw
+
+    def update_master_password(self, user_or_uid, update: MasterEntity):
+        if 'user' in update or 'token' in update:
+            raise InvalidUpdateError('User and master token cannot be updated inside master vault.')
+        if isinstance(user_or_uid, self.repo.id_cls):
+            self.repo.update_by_id(user_or_uid, update=update)
+        elif isinstance(user_or_uid, str):
+            self.repo.update_by_crit(
+                crit=MasterEntity(user=user_or_uid), update=MasterEntity(user=user_or_uid))
+        else:
+            raise TypeError(f'Parameter user_or_uid should be either of type {str} or {self.repo.id_cls}.')
+        return None
+
+
+class VaultDbSupport:
+    def create_vault_entry(self, __uid: int = None, *, entity: VaultEntity):
         pass
 
-    def update_master_password(self, user_or_uid: str | int, update: _T) -> int:
+    def read_vault_entries(self, __uid: int | str = None, *, crit: VaultEntity = None, doc_ids: Iterable[int] = None):
         pass
 
-    def create_vault_entry(
-            self,
-            __uid: int = None,
-            *,
-            pw: str = None,
-            salt: str = None,
-            user: str = None,
-            label: str = None,
-            email: str = None,
-            site: str = None,
-            **kwargs
-    ):
-        pass
-
-    def read_vault_entries(self, __uid: int | str = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
-        pass
-
-    def read_vault_entry(self, __uid: int = None, *, cond: dict = None, doc_id: int = None):
-        pass
-
-    def update_vault_entries(
-            self,
-            __uid: int = None,
-            *,
-            fields: Mapping,
-            cond: dict = None,
-            doc_ids: Iterable[int] = None
-    ):
+    def read_vault_entry(self, __uid: int = None, *, crit: VaultEntity = None, doc_id: int = None):
         pass
 
     def update_vault_entry(
             self,
             __uid: int = None,
             *,
-            fields: Mapping,
-            cond: dict = None,
+            update: VaultEntity,
+            crit: VaultEntity = None,
             doc_id: int
     ):
         pass
 
-    def delete_vault_entries(self, __uid: int = None, *, cond: dict = None, doc_ids: Iterable[int] = None):
+    def update_vault_entries(
+            self,
+            __uid: int = None,
+            *,
+            update: VaultEntity,
+            crit: VaultEntity = None,
+            doc_ids: Iterable[int] = None
+    ):
         pass
 
-    def delete_vault_entry(self, __uid: int = None, *, cond: dict = None, doc_id: int):
+    def delete_vault_entry(self, __uid: int = None, *, crit: VaultEntity = None, doc_id: int):
+        pass
+
+    def delete_vault_entries(self, __uid: int = None, *, crit: VaultEntity = None, doc_ids: Iterable[int] = None):
         pass

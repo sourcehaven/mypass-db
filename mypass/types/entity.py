@@ -1,6 +1,6 @@
 from typing import Optional, Generic, TypeVar
 
-from mypass.utils import GetSetDescriptor
+from mypass.utils.descriptors import GetSetDescriptor
 from .elastic import ElasticClass
 
 T = TypeVar('T')
@@ -16,7 +16,7 @@ def entity(table: str):
 
 
 @entity('master')
-class MasterVaultEntity(ElasticClass):
+class MasterEntity(ElasticClass):
     user: Optional[str]
     token: Optional[str]
     pw: Optional[str]
@@ -36,7 +36,7 @@ class MasterVaultEntity(ElasticClass):
 
 
 @entity('vault')
-class PasswordVaultEntity(ElasticClass):
+class VaultEntity(ElasticClass):
     pw: Optional[str]
     salt: Optional[str]
     user: Optional[str]
@@ -58,9 +58,3 @@ class PasswordVaultEntity(ElasticClass):
     ):
         super().__init__(user=user, pw=pw, salt=salt, label=label, email=email, site=site, **kwargs)
         self.id = __id
-
-
-if __name__ == '__main__':
-    vault_entry = PasswordVaultEntity(1, user='mypass-user', pw='mypass_pw')
-    myid = vault_entry.id
-    print(vault_entry)

@@ -2,7 +2,7 @@ from typing import Iterable
 
 from tinydb.table import Document
 
-from mypass.db import create_query
+from mypass.db.utils import create_query
 
 ID_FIELD = '_id'
 PROTECTED_FIELDS = '_protected_fields'

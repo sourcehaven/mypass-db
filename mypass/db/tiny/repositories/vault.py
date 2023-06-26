@@ -2,11 +2,11 @@ from typing import Mapping, Iterable
 
 from mypass.db.tiny import TinyDao, TinyRepository
 from mypass.exceptions import EmptyRecordInsertionError
-from mypass.types import PasswordVaultEntity
+from mypass.types import VaultEntity
 from mypass.utils.tinydb import UID_FIELD, ID_FIELD, PROTECTED_FIELDS
 from mypass.utils.tinydb import create_query_with_uid, documents_as_dict, filter_doc_ids, document_as_dict, check_uid
 
-_T = PasswordVaultEntity
+_T = VaultEntity
 
 
 class VaultTinyRepository(TinyRepository[int, _T]):

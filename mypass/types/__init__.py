@@ -1,2 +1,2 @@
 from .elastic import ElasticClass
-from .entity import MasterVaultEntity, PasswordVaultEntity
+from .entity import MasterEntity, VaultEntity

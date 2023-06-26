@@ -2,11 +2,11 @@ from tinydb import Query
 
 from mypass.db.tiny import TinyRepository, TinyDao
 from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, UserNotExistsError
-from mypass.types import MasterVaultEntity
+from mypass.types import MasterEntity
 from mypass.utils import document_as_dict
 from mypass.utils.tinydb import check_uid
 
-_T = MasterVaultEntity
+_T = MasterEntity
 
 
 class MasterTinyRepository(TinyRepository[int, _T]):
