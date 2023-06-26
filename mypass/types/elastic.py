@@ -56,3 +56,12 @@ class ElasticClass(Mapping):
 
     def __getattr__(self, item):
         pass
+
+    def is_empty(self):
+        return len(self) <= 0
+
+    def __copy__(self):
+        return ElasticClass(**self)
+
+    def copy(self):
+        return self.__copy__()

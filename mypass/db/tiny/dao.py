@@ -6,7 +6,7 @@ from tinydb import TinyDB, Storage
 from tinydb.queries import QueryLike
 from tinydb.table import Document
 
-import mypass.db.tiny.operations as ops
+from . import operations as ops
 
 
 class TinyDao:

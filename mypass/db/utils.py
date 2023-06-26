@@ -1,9 +1,11 @@
-from typing import Literal, Callable, Any, TypeVar, Iterable
+from typing import Literal, Callable, Any, Iterable
 
-from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, InvalidUpdateError, RequiresIdError
+from mypass.exceptions import MasterPasswordExistsError, UserNotExistsError, InvalidUpdateError, RequiresIdError, \
+    EmptyRecordInsertionError
 from mypass.types import MasterEntity, VaultEntity
+from mypass.types import const
+from mypass.utils import gen_uuid
 from .repository import CrudRepository
-from ..utils import gen_uuid
 
 
 def create_query_all(query_like: dict):
@@ -23,7 +25,14 @@ def create_query(query_like: dict, logic: Literal['and', 'or']) -> Callable[[Any
     return create_query_any(query_like)
 
 
-_T = TypeVar('_T')
+def create_query_with_uid(__uid: int | str = None, cond: dict = None):
+    if cond is not None:
+        if __uid is not None:
+            cond[const.UID_FIELD] = __uid
+        cond = create_query(cond, logic='and')
+    elif __uid is not None:
+        cond = create_query({const.UID_FIELD: __uid}, logic='and')
+    return cond
 
 
 class MasterDbSupport:
@@ -64,37 +73,43 @@ class MasterDbSupport:
 
 
 class VaultDbSupport:
-    def create_vault_entry(self, __uid: int = None, *, entity: VaultEntity):
+    def __init__(self, repo: CrudRepository):
+        self.repo = repo
+
+    def create_vault_entry(self, __uid=None, *, entity: VaultEntity):
+        if entity.is_empty():
+            raise EmptyRecordInsertionError('Cannot insert empty record into vault table.')
+        entity[const.UID_FIELD] = __uid
+        self.repo.create(entity)
+
+    def read_vault_entries(self, __uid=None, *, crit: VaultEntity = None, doc_ids: Iterable = None):
         pass
 
-    def read_vault_entries(self, __uid: int | str = None, *, crit: VaultEntity = None, doc_ids: Iterable[int] = None):
-        pass
-
-    def read_vault_entry(self, __uid: int = None, *, crit: VaultEntity = None, doc_id: int = None):
+    def read_vault_entry(self, __uid=None, *, crit: VaultEntity = None, doc_id=None):
         pass
 
     def update_vault_entry(
             self,
-            __uid: int = None,
+            __uid=None,
             *,
             update: VaultEntity,
             crit: VaultEntity = None,
-            doc_id: int
+            doc_id
     ):
         pass
 
     def update_vault_entries(
             self,
-            __uid: int = None,
+            __uid=None,
             *,
             update: VaultEntity,
             crit: VaultEntity = None,
-            doc_ids: Iterable[int] = None
+            doc_ids: Iterable = None
     ):
         pass
 
-    def delete_vault_entry(self, __uid: int = None, *, crit: VaultEntity = None, doc_id: int):
+    def delete_vault_entry(self, __uid=None, *, crit: VaultEntity = None, doc_id):
         pass
 
-    def delete_vault_entries(self, __uid: int = None, *, crit: VaultEntity = None, doc_ids: Iterable[int] = None):
+    def delete_vault_entries(self, __uid=None, *, crit: VaultEntity = None, doc_ids: Iterable = None):
         pass

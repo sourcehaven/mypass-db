@@ -11,7 +11,6 @@ from werkzeug.exceptions import UnsupportedMediaType
 from mypass import hooks
 from mypass.api import AuthApi, TinyDbApi
 from mypass.db.tiny import MasterTinyRepository, VaultTinyRepository
-from mypass.public import IndexTemplate
 from mypass.utils import hash_fn
 
 HOST = 'localhost'
@@ -45,8 +44,6 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
     # register api endpoints
     app.register_blueprint(AuthApi)
     app.register_blueprint(TinyDbApi)
-    # add public templates
-    app.register_blueprint(IndexTemplate)
 
     app.register_error_handler(UnsupportedMediaType, hooks.unsupported_media_type_handler)
     app.register_error_handler(Exception, hooks.base_error_handler)

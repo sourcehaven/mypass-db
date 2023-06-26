@@ -1,9 +1,8 @@
 from typing import Iterable, Optional, Generic, TypeVar
 
 from mypass.db.repository import CrudRepository
-from mypass.db.utils import create_query
-
 from mypass.db.tiny.dao import TinyDao
+from mypass.db.utils import create_query
 
 _ID = TypeVar('_ID')
 _T = TypeVar('_T')
@@ -18,7 +17,7 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
             try:
                 dao = TinyDao(*args, **kwargs)
             except TypeError:
-                dao = TinyDao(table=self._entity_cls.table, *args, **kwargs)
+                dao = TinyDao(table=self.entity_cls.table, *args, **kwargs)
         self.dao = dao
 
     def get_table_name(self):
@@ -90,7 +89,9 @@ if __name__ == '__main__':
             self.name = 'name'
             self.tag = 52
 
+
     class MyRepo(TinyRepository[int, Dog]):
         pass
+
 
     repo = MyRepo()

@@ -14,6 +14,7 @@ def delete_keys(keys: Iterable[str], ignore_keyerr: bool = True):
                 except KeyError as e:
                     if not ignore_keyerr:
                         raise e
+
     return operation
 
 
