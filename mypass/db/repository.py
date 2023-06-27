@@ -60,7 +60,7 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
         ...
 
     @abc.abstractmethod
-    def update_by_id(self, __id: _ID, update: _T) -> _ID:
+    def update_by_id(self, __id: _ID, update: _T) -> Optional[_ID]:
         """Updates an entity by its corresponding id."""
         ...
 
@@ -89,7 +89,7 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
         ...
 
     @abc.abstractmethod
-    def remove_by_id(self, __id: _ID) -> _ID:
+    def remove_by_id(self, __id: _ID) -> Optional[_ID]:
         """Removes an entity by its corresponding id."""
         ...
 

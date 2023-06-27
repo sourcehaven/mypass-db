@@ -22,6 +22,10 @@ class UserNotExistsError(DbError):
     pass
 
 
+class EmptyQueryError(DbError):
+    pass
+
+
 class RecordNotFoundError(DbError):
     pass
 

@@ -50,8 +50,12 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
             for document in cond_documents if document.doc_id in allowed_ids
         ]
 
-    def update_by_id(self, __id: _ID, update: _T) -> _ID:
-        return self.dao.update(entity=update, doc_ids=[__id])
+    def update_by_id(self, __id: _ID, update: _T) -> Optional[_ID]:
+        items = self.dao.update(entity=update, doc_ids=[__id])
+        try:
+            return items[0]
+        except IndexError:
+            return None
 
     def update_by_ids(self, __ids: Iterable[_ID], update: _T) -> Iterable[_ID]:
         return self.dao.update(entity=update, doc_ids=__ids)
@@ -65,8 +69,12 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         document_ids_to_update = [doc.doc_id for doc in cond_documents if doc.doc_id in allowed_ids]
         return self.dao.update(entity=update, doc_ids=document_ids_to_update)
 
-    def remove_by_id(self, __id: _ID) -> _ID:
-        return self.dao.delete(doc_ids=[__id])
+    def remove_by_id(self, __id: _ID) -> Optional[_ID]:
+        items = self.dao.delete(doc_ids=[__id])
+        try:
+            return items[0]
+        except IndexError:
+            return None
 
     def remove_by_ids(self, __ids: Iterable[_ID]) -> Iterable[_ID]:
         return self.dao.delete(doc_ids=__ids)
