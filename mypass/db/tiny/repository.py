@@ -32,21 +32,21 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
     def find_by_id(self, __id: _ID) -> Optional[_T]:
         document = self.dao.read_one(doc_id=__id)
         if document is not None:
-            return self._entity_cls(document.doc_id, **document)
+            return self.entity_cls(document.doc_id, **document)
 
     def find_by_ids(self, __ids: Iterable[_ID]) -> Iterable[_T]:
         documents = self.dao.read(doc_ids=__ids)
-        return [self._entity_cls(document.doc_id, **document) for document in documents]
+        return [self.entity_cls(document.doc_id, **document) for document in documents]
 
     def find_by_crit(self, crit: _T) -> Iterable[_T]:
         documents = self.dao.read(cond=crit)
-        return [self._entity_cls(document.doc_id, **document) for document in documents]
+        return [self.entity_cls(document.doc_id, **document) for document in documents]
 
     def find(self, __ids: Iterable[_ID], crit: _T) -> Iterable[_T]:
         cond_documents = self.dao.read(cond=create_query(dict(crit), 'and'))
         allowed_ids = set(__ids)
         return [
-            self._entity_cls(document.doc_id, **document)
+            self.entity_cls(document.doc_id, **document)
             for document in cond_documents if document.doc_id in allowed_ids
         ]
 

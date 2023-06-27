@@ -6,7 +6,7 @@ _ID = TypeVar('_ID')
 
 
 class CrudRepository(abc.ABC, Generic[_ID, _T]):
-    def __init__(self, nosafe: bool = False):
+    def __init__(self):
         # noinspection PyUnresolvedReferences
         # insane hacking -> get stored entity type from original bases
         generic_info = self.__class__.__orig_bases__[0]
