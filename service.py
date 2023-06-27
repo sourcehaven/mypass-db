@@ -10,7 +10,8 @@ from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import hooks
 from mypass.api import AuthApi, TinyDbApi
-from mypass.db.tiny import MasterTinyRepository, VaultTinyRepository
+from mypass.db import MasterDbSupport, VaultDbSupport
+from mypass.db.tiny import TinyRepository
 from mypass.utils import hash_fn
 
 HOST = 'localhost'
@@ -37,8 +38,9 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
     app.config['JWT_BLACKLIST_ENABLED'] = True
     app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
     app.config['API_KEY'] = api_key
-    app.config['master_controller'] = MasterTinyRepository(path=db_path)
-    app.config['vault_controller'] = VaultTinyRepository(path=db_path)
+    # TODO: add specific implementations for tiny repositories. This is a yet insufficient config.
+    app.config['master_controller'] = MasterDbSupport(repo=TinyRepository(path=db_path))
+    app.config['vault_controller'] = VaultDbSupport(repo=TinyRepository(path=db_path))
     app.config.from_object(__name__)
 
     # register api endpoints

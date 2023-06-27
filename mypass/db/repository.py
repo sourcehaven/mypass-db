@@ -6,7 +6,7 @@ _ID = TypeVar('_ID')
 
 
 class CrudRepository(abc.ABC, Generic[_ID, _T]):
-    def __init__(self):
+    def __init__(self, nosafe: bool = False):
         # noinspection PyUnresolvedReferences
         # insane hacking -> get stored entity type from original bases
         generic_info = self.__class__.__orig_bases__[0]
@@ -88,6 +88,10 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
         """
         ...
 
+    def update_all(self, update: _T) -> Iterable[_ID]:
+        """Updates all documents unconditionally."""
+        ...
+
     @abc.abstractmethod
     def remove_by_id(self, __id: _ID) -> Optional[_ID]:
         """Removes an entity by its corresponding id."""
@@ -114,5 +118,12 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
         """
         Removes multiple documents by given ids and a given criteria,
         and returns the removed ids in an iterable.
+        """
+        ...
+
+    @abc.abstractmethod
+    def remove_all(self) -> None:
+        """
+        Removes all documents.
         """
         ...

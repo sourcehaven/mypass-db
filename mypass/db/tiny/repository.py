@@ -69,6 +69,9 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         document_ids_to_update = [doc.doc_id for doc in cond_documents if doc.doc_id in allowed_ids]
         return self.dao.update(entity=update, doc_ids=document_ids_to_update)
 
+    def update_all(self, update: _T) -> Iterable[_ID]:
+        return self.dao.update(entity=update)
+
     def remove_by_id(self, __id: _ID) -> Optional[_ID]:
         items = self.dao.delete(doc_ids=[__id])
         try:
@@ -87,6 +90,9 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         allowed_ids = set(__ids)
         document_ids_to_delete = [doc.doc_id for doc in cond_documents if doc.doc_id in allowed_ids]
         return self.dao.delete(doc_ids=document_ids_to_delete)
+
+    def remove_all(self):
+        self.dao.delete_all()
 
 
 if __name__ == '__main__':

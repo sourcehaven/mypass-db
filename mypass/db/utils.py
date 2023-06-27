@@ -6,7 +6,6 @@ from mypass.types import MasterEntity, VaultEntity
 from mypass.types import const
 from mypass.utils import gen_uuid
 from .repository import CrudRepository
-from ..types.op import DEL
 
 
 def create_query_all(query_like: dict):
@@ -37,8 +36,9 @@ def create_query_with_uid(__uid: int | str = None, cond: dict = None):
 
 
 class MasterDbSupport:
-    def __init__(self, repo: CrudRepository):
+    def __init__(self, repo: CrudRepository, nosafe: bool = False):
         self.repo = repo
+        self._nosafe = nosafe
 
     def create_master_password(self, entity: MasterEntity):
         """
@@ -106,8 +106,9 @@ class MasterDbSupport:
 
 
 class VaultDbSupport:
-    def __init__(self, repo: CrudRepository):
+    def __init__(self, repo: CrudRepository, nosafe: bool = False):
         self.repo = repo
+        self._nosafe = nosafe
 
     def create_vault_entry(self, __uid=None, *, entity: VaultEntity):
         """
@@ -116,6 +117,9 @@ class VaultDbSupport:
 
         Raises:
             EmptyRecordInsertionError: Raises if trying to insert an empty record.
+
+        Returns:
+            str | int: Identification of the created entry.
         """
 
         if entity.is_empty():
@@ -132,19 +136,27 @@ class VaultDbSupport:
         Raises:
             EmptyQueryError: Raises if trying to query without any conditions.
             RecordNotFoundError: Raises if record could not be found in vault.
+
+        Returns:
+            VaultEntity: Vault entity.
         """
 
         assert crit is None or pk is None, 'Only one of `crit` or `pk` should be passed.'
         if crit is None and pk is None:
             raise EmptyQueryError('Both params `crit` and `pk` should not be None.')
         if __uid is not None:
+            if crit is None:
+                crit = VaultEntity()
             crit[const.UID_FIELD] = __uid
-        if pk is None:
+        if pk is not None:
             item = self.repo.find_by_id(pk)
-            if item[const.UID_FIELD] != __uid:
+            if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
                 raise RecordNotFoundError(f'Requested record with criteria {crit} and pk {pk} not found.')
             return item
-        return self.repo.find_one(crit)
+        item = self.repo.find_one(crit)
+        if item is None:
+            raise RecordNotFoundError(f'Requested record with criteria {crit} not found.')
+        return item
 
     def read_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable = None):
         """
@@ -153,22 +165,32 @@ class VaultDbSupport:
 
         Raises:
             EmptyQueryError: Raises if trying to query without any conditions.
+
+        Returns:
+            Iterable[VaultEntity]: The vault entities found based on given conditions.
         """
 
         if crit is None and pks is None:
             raise EmptyQueryError('Both params `crit` and `pks` should not be None.')
         if __uid is not None:
+            if crit is None:
+                crit = VaultEntity()
             crit[const.UID_FIELD] = __uid
-        return self.repo.find(pks, crit=crit)
+        if pks is not None and crit is not None:
+            return self.repo.find(pks, crit=crit)
+        if pks is not None:
+            return self.repo.find_by_ids(pks)
+        if crit is not None:
+            return self.repo.find_by_crit(crit=crit)
 
-    def update_vault_entry( self, __uid=None, *, update: VaultEntity, pk: Any):
+    def update_vault_entry(self, __uid=None, *, update: VaultEntity, pk: Any):
         """
         Updates entry based on given conditions and update object.
         If given, special UID field will be inserted inside entity criteria.
         Also, responsible for removing specified keys with a value of operator.DEL.
 
         Returns:
-            Updated id.
+            str | int: Updated id.
 
         Raises:
             RecordNotFoundError: Raises only if no record found based on given conditions.
@@ -179,18 +201,13 @@ class VaultDbSupport:
             raise TypeError('Update object cannot contain a new user id field.')
 
         item = self.repo.find_by_id(pk)
-        if item[const.UID_FIELD] != __uid:
+        if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
             raise RecordNotFoundError(f'Requested record with pk {pk} not found.')
 
-        del_fields = set([k for k, v in item.items() if v == DEL])
-        protected_fields = item.get(const.PROTECTED_FIELD, [])
-        protected_fields = [pf for pf in protected_fields if pf not in del_fields]
-        if len(protected_fields) <= 0:
-            update[const.PROTECTED_FIELD] = DEL
-        else:
-            update[const.PROTECTED_FIELD] = protected_fields
-
-        return self.repo.update_by_id(pk, update=update)
+        item = self.repo.update_by_id(pk, update=update)
+        if item is None:
+            raise RecordNotFoundError(f'Requested record with pk {pk} not found.')
+        return item
 
     def update_vault_entries(
             self,
@@ -206,44 +223,66 @@ class VaultDbSupport:
         Also, responsible for removing specified keys with a value of operator.DEL.
 
         Returns:
-            Iterable of updated id.
+            Iterable[str] | Iterable[int]: Iterable of updated ids.
 
         Raises:
             TypeError: Raises only if trying to update special UID field.
         """
 
-        items = self.read_vault_entries(__uid, crit=crit, pks=pks)
-        ids = [item.id for item in items]
-        updated_ids = [self.update_vault_entry(update=update, pk=pk) for pk in ids]
-        return [pk for pk in updated_ids if pk is not None]
+        if const.UID_FIELD in update:
+            raise TypeError('Update object cannot contain a new user id field.')
+
+        if __uid is not None:
+            if crit is None:
+                crit = VaultEntity()
+            crit[const.UID_FIELD] = __uid
+
+        if crit is not None and pks is not None:
+            return self.repo.update(pks, crit=crit, update=update)
+        if crit is not None:
+            return self.repo.update_by_crit(crit=crit, update=update)
+        if pks is not None:
+            return self.repo.update_by_ids(pks, update=update)
+        return self.repo.update_all(update)
 
     def delete_vault_entry(self, __uid=None, *, pk: Any):
-        # check_uid(__uid)
-        # cond = create_query_with_uid(__uid, cond)
-        # if doc_ids is None:
-        #     items = self.dao.delete(cond=cond)
-        # else:
-        #     docs = self.read_vault_entries(__uid, cond=cond, doc_ids=doc_ids)
-        #     items = self.dao.delete(doc_ids=[d[ID_FIELD] for d in docs])
-        # return items
+        """
+        Deletes a single vault entry.
 
-        pass
+        Returns:
+            str | int: Deleted record's id.
+
+        Raises:
+            RecordNotFoundError: If requested record to be deleted does not exist.
+        """
+        item = self.repo.find_by_id(pk)
+        if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
+            raise RecordNotFoundError(f'Requested record with pk {pk} not found.')
+        return self.repo.remove_by_id(pk)
 
     def delete_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable = None):
-        # check_uid(__uid)
-        # cond = create_query_with_uid(__uid, cond)
-        # if cond is not None:
-        #     # check the conditions first, and only delete matching items
-        #     item = self.read_vault_entry(__uid, doc_id=doc_id, cond=cond)
-        #     if item is not None:
-        #         items = self.dao.delete(doc_ids=[doc_id])
-        #     else:
-        #         items = []
-        # else:
-        #     items = self.dao.delete(doc_ids=[doc_id])
-        # try:
-        #     return items[0]
-        # except IndexError:
-        #     return None
+        """
+        Deletes multiple entries from vault based on given conditions.
 
-        pass
+        Returns:
+            Iterable[str] | Iterable[int]: Ids of successfully deleted items.
+
+        Raises:
+            TypeError: Raises only if operation is unsafe, or not allowed.
+        """
+
+        if __uid is not None:
+            if crit is None:
+                crit = VaultEntity()
+            crit[const.UID_FIELD] = __uid
+
+        if crit is not None and pks is not None:
+            return self.repo.remove(pks, crit=crit)
+        if crit is not None:
+            return self.repo.remove_by_crit(crit=crit)
+        if pks is not None:
+            return self.repo.remove_by_ids(pks)
+        if self._nosafe:
+            self.repo.remove_all()
+        else:
+            raise TypeError('Deleting multiple entries without any criteria (truncation) is not allowed.')
