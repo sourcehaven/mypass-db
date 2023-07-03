@@ -61,7 +61,7 @@ class ElasticClass(Mapping):
         return len(self) <= 0
 
     def __copy__(self):
-        return ElasticClass(**self)
+        return type(self)(**self)
 
     def copy(self):
         return self.__copy__()
@@ -82,3 +82,12 @@ class ElasticClass(Mapping):
         val = self[__item]
         delattr(self, __item)
         return val
+
+    def update(self, other: Mapping):
+        for k, v in other.items():
+            setattr(self, k, v)
+
+    def __or__(self, other: Mapping):
+        result = type(self)(**self)
+        result.update(other)
+        return result
