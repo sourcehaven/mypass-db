@@ -1,5 +1,7 @@
 from typing import Iterable, Optional, Generic, TypeVar
 
+from tinydb.table import Document
+
 from mypass.db.repository import CrudRepository
 from mypass.db.tiny.dao import TinyDao
 from mypass.db.utils import create_query
@@ -24,6 +26,8 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         return self.dao.table
 
     def create(self, entity: _T) -> _ID:
+        if entity.id is not None:
+            entity = Document(dict(entity), doc_id=entity.id)
         return self.dao.create(entity=entity)
 
     def find_one(self, entity: _T) -> Optional[_T]:
@@ -51,13 +55,14 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         ]
 
     def update_by_id(self, __id: _ID, update: _T) -> Optional[_ID]:
-        items = self.dao.update(entity=update, doc_ids=[__id])
         try:
-            return items[0]
-        except IndexError:
+            return self.dao.update(entity=update, doc_ids=[__id])[0]
+        except KeyError:
             return None
 
     def update_by_ids(self, __ids: Iterable[_ID], update: _T) -> Iterable[_ID]:
+        # filter out invalid ids first (prevent throwing KeyError)
+        __ids = [pk for pk in __ids if self.find_by_id(pk) is not None]
         return self.dao.update(entity=update, doc_ids=__ids)
 
     def update_by_crit(self, crit: _T, update: _T) -> Iterable[_ID]:

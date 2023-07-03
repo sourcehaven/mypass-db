@@ -59,7 +59,7 @@ class MasterDbSupport:
                 return self.repo.create(entity=entity)
         raise MasterPasswordExistsError('Trying to store multiple master passwords for the same user.')
 
-    def read_master_password(self, user_or_uid):
+    def read_master_password(self, __uid):
         """
         Reads the master password of a given user.
 
@@ -69,40 +69,31 @@ class MasterDbSupport:
             UserNotExistsError - Raises only if the given user does not exist in the db.
         """
 
-        if isinstance(user_or_uid, self.repo.id_cls):
-            item: MasterEntity = self.repo.find_by_id(user_or_uid)
-        elif isinstance(user_or_uid, str):
-            item = self.repo.find_one(entity=MasterEntity(user=user_or_uid))
-        else:
-            raise TypeError(f'Parameter user_or_uid should be either of type {str} or {self.repo.id_cls}.')
-        if item is None:
-            raise UserNotExistsError(f'User with id {user_or_uid} could not be found.')
-        pw: str = item.pw
-        return pw
+        if isinstance(__uid, self.repo.id_cls):
+            item = self.repo.find_by_id(__uid)
+            if item is None:
+                raise UserNotExistsError(f'User with id {__uid} could not be found.')
+            return item.pw
+        raise TypeError(f'Parameter __uid should be of type {self.repo.id_cls}.')
 
-    def update_master_password(self, user_or_uid, update: MasterEntity):
+    def update_master_password(self, __uid, update: MasterEntity):
         """
-        Updates master password for a given user.
+        Updates master password for a given user id.
 
         Returns:
-            Updated id.
+            str | int: Updated id.
         Raises:
             TypeError: Only if param user_or_uid is not an accepted user
         """
 
         if 'user' in update or 'token' in update:
             raise InvalidUpdateError('User and master token cannot be updated inside master vault.')
-        if isinstance(user_or_uid, self.repo.id_cls):
-            return self.repo.update_by_id(user_or_uid, update=update)
-        elif isinstance(user_or_uid, str):
-            items = self.repo.update_by_crit(
-                crit=MasterEntity(user=user_or_uid), update=MasterEntity(user=user_or_uid))
-            try:
-                return list(items)[0]
-            except IndexError:
-                raise UserNotExistsError(f'User with id {user_or_uid} could not be found.')
-        else:
-            raise TypeError(f'Parameter user_or_uid should be either of type {str} or {self.repo.id_cls}.')
+        if isinstance(__uid, self.repo.id_cls):
+            item = self.repo.update_by_id(__uid, update=update)
+            if item is None:
+                raise UserNotExistsError(f'User with id {__uid} could not be found.')
+            return item
+        raise TypeError(f'Parameter __uid should be of type {self.repo.id_cls}.')
 
 
 class VaultDbSupport:
@@ -124,8 +115,13 @@ class VaultDbSupport:
 
         if entity.is_empty():
             raise EmptyRecordInsertionError('Cannot insert empty record into vault table.')
-        entity[const.UID_FIELD] = __uid
-        return self.repo.create(entity)
+        if __uid is not None:
+            entity[const.UID_FIELD] = __uid
+        try:
+            return self.repo.create(entity=entity)
+        except RequiresIdError:
+            entity.id = gen_uuid(self.repo.id_cls.__class__.__name__)
+            return self.repo.create(entity=entity)
 
     def read_vault_entry(self, __uid=None, *, crit: VaultEntity = None, pk: Any = None):
         """

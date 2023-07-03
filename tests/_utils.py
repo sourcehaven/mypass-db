@@ -1,4 +1,5 @@
 from multiprocessing import Lock
+from typing import Mapping
 
 from tinydb import Storage
 
@@ -19,7 +20,7 @@ class Lockable:
         self._lock = Lock()
 
 
-class AtomicDict(Lockable):
+class AtomicDict(Mapping, Lockable):
     def __init__(self):
         super().__init__()
         self._dict = {}
@@ -44,8 +45,11 @@ class AtomicDict(Lockable):
     def __repr__(self):
         return str(self)
 
-    def get(self, __key, __default):
-        return self._dict.get(__key, __default)
+    def __len__(self):
+        return len(self._dict)
+
+    def __iter__(self):
+        return self._dict.__iter__()
 
     def pop(self, __key):
         with self._lock:

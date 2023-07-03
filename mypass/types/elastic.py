@@ -1,4 +1,4 @@
-from typing import Mapping
+from typing import Mapping, overload
 
 
 class ElasticClass(Mapping):
@@ -33,6 +33,9 @@ class ElasticClass(Mapping):
     def __setitem__(self, __key, __value):
         setattr(self, __key, __value)
 
+    def __contains__(self, item):
+        return hasattr(self, item)
+
     def _get_parts(self):
         for name in vars(self):
             if (not name.startswith('__') and (not name.startswith('_') and not name.endswith('_'))
@@ -40,7 +43,7 @@ class ElasticClass(Mapping):
                 yield name
 
     def __len__(self):
-        return tuple(self._get_parts())
+        return len(tuple(self._get_parts()))
 
     def __iter__(self):
         return self._get_parts()
@@ -54,9 +57,6 @@ class ElasticClass(Mapping):
     def __repr__(self):
         return str(self)
 
-    def __getattr__(self, item):
-        pass
-
     def is_empty(self):
         return len(self) <= 0
 
@@ -65,3 +65,20 @@ class ElasticClass(Mapping):
 
     def copy(self):
         return self.__copy__()
+
+    @overload
+    def pop(self, __item):
+        ...
+
+    @overload
+    def pop(self, __item, __default):
+        ...
+
+    def pop(self, __item, __default=...):
+        if __default is ... and not hasattr(self, __item):
+            raise AttributeError(f'Object {self} has not attribute "{__item}".')
+        if not hasattr(self, __item):
+            return __default
+        val = self[__item]
+        delattr(self, __item)
+        return val
