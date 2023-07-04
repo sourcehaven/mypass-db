@@ -1,3 +1,5 @@
+import random
+import uuid
 from multiprocessing import Lock
 from typing import Mapping
 
@@ -83,3 +85,8 @@ class AtomicMemoryStorage(Storage):
 
     def write(self, data) -> None:
         persistent_storage.data = data
+
+
+def seed_uuid(seed):
+    random.seed(seed)
+    uuid.UUID(int=random.getrandbits(128), version=4)
