@@ -159,19 +159,16 @@ class VaultDbSupport:
         Reads multiple entries from password vault based on given conditions.
         If given, special UID field will be inserted inside entity criteria.
 
-        Raises:
-            EmptyQueryError: Raises if trying to query without any conditions.
-
         Returns:
             Iterable[VaultEntity]: The vault entities found based on given conditions.
         """
 
-        if crit is None and pks is None:
-            raise EmptyQueryError('Both params `crit` and `pks` should not be None.')
         if __uid is not None:
             if crit is None:
                 crit = VaultEntity()
             crit[const.UID_FIELD] = __uid
+        if pks is None and crit is None:
+            return self.repo.find_all()
         if pks is not None and crit is not None:
             return self.repo.find(pks, crit=crit)
         if pks is not None:

@@ -19,7 +19,7 @@ class ElasticClass(Mapping):
         Parameters:
             kwargs: keyword arguments, where every key should be a string
         """
-        self._blacklist = {'_abc_impl', '_is_protocol'}
+        self.__blacklist = {'_abc_impl', '_is_protocol'}
         for k in kwargs:
             if kwargs[k] is not None:
                 setattr(self, k, kwargs[k])
@@ -36,10 +36,12 @@ class ElasticClass(Mapping):
     def __contains__(self, item):
         return hasattr(self, item)
 
+    def _is_mangled(self, field_name):
+        return any(field_name.startswith(f'_{base.__name__}__') for base in self.__class__.mro())
+
     def _get_parts(self):
         for name in vars(self):
-            if (not name.startswith('__') and (not name.startswith('_') and not name.endswith('_'))
-                    and not name.startswith(f'_{self.__class__.__name__}__') and name not in self._blacklist):
+            if not name.startswith('__') and not self._is_mangled(name) and name not in self.__blacklist:
                 yield name
 
     def __len__(self):

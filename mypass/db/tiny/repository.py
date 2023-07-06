@@ -43,7 +43,7 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         return [self.entity_cls(document.doc_id, **document) for document in documents]
 
     def find_by_crit(self, crit: _T) -> Iterable[_T]:
-        documents = self.dao.read(cond=crit)
+        documents = self.dao.read(cond=create_query(dict(crit), 'and'))
         return [self.entity_cls(document.doc_id, **document) for document in documents]
 
     def find(self, __ids: Iterable[_ID], crit: _T) -> Iterable[_T]:
@@ -53,6 +53,10 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
             self.entity_cls(document.doc_id, **document)
             for document in cond_documents if document.doc_id in allowed_ids
         ]
+
+    def find_all(self) -> Iterable[_T]:
+        documents = self.dao.read()
+        return [self.entity_cls(document.doc_id, **document) for document in documents]
 
     def update_by_id(self, __id: _ID, update: _T) -> Optional[_ID]:
         try:
@@ -66,7 +70,7 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
         return self.dao.update(entity=update, doc_ids=__ids)
 
     def update_by_crit(self, crit: _T, update: _T) -> Iterable[_ID]:
-        return self.dao.update(entity=update, cond=crit)
+        return self.dao.update(entity=update, cond=create_query(dict(crit), 'and'))
 
     def update(self, __ids: Iterable[_ID], crit: _T, update: _T) -> Iterable[_ID]:
         cond_documents = self.dao.read(cond=create_query(dict(crit), 'and'))
