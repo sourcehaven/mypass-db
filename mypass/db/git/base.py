@@ -1,11 +1,9 @@
 import os
-from pathlib import Path
-from typing import Sequence, TypedDict
+from typing import TypedDict
 from urllib.parse import urlparse
 
 from git import InvalidGitRepositoryError, Repo
 
-REPO_PATH = '.db'
 NAME = 'db-agent'
 EMAIL = 'db.agent@mail.com'
 INITIAL_BRANCH = 'main'
@@ -24,30 +22,37 @@ def configure_remote_with_auth(remote_url: str, auth: _T_AUTH):
 
 
 class GitRepoBase:
-    def __init__(
-            self,
-            path: str | os.PathLike = None,
-            name: str = None,
-            email: str = None,
-            branch: str = None,
-            remote: str = None,
-            remote_url: str = None,
-            auth: _T_AUTH = None
-    ):
-        if REPO_PATH is None:
-            path = REPO_PATH
+    def __init__(self, path=None, name=None, email=None, *, branch=None, remote=None, remote_url=None, auth=None):
+        """
+        Simple utility class for adding, committing, and optionally pushing to a remote repository.
+        Helps with the management of repositories.
+
+        Parameters:
+            path (str | os.PathLike): Path of the local repository.
+                If `None` is given, will try to read the path from os environment 'GIT_DIR'.
+                Defaults to `None`.
+            name (str): Config param for **git config user.name {name}**.
+                Defaults to 'db-agent' (`NAME`).
+            email (str): Config param for **git config user.email {email}**.
+                Defaults to 'db.agent@mail.com' (`EMAIL`).
+            branch (str): Root branch to use. Defaults to 'main' (`INITIAL_BRANCH`).
+            remote (str): Name of the remote. Usually 'origin', which is also the default if not specified.
+            remote_url (str): Remote repository url.
+            auth (_T_AUTH): Authorization information. Contains your username, and access_token.
+        """
+
         if name is None:
             name = NAME
         if email is None:
             email = EMAIL
         if branch is None:
             branch = INITIAL_BRANCH
+        self.remote = remote
 
-        repo_path = Path(path)
         try:
-            self.repo = Repo(repo_path)
+            self.repo = Repo(path)
         except InvalidGitRepositoryError:
-            self.repo = Repo.init(repo_path, initial_branch=branch)
+            self.repo = Repo.init(path, initial_branch=branch)
 
         with self.repo.config_writer() as conf:
             conf.set_value('user', 'name', name)
@@ -55,20 +60,29 @@ class GitRepoBase:
 
         assert remote is None or remote_url is not None, 'Specifying `remote` without `remote_url` is invalid.'
         if remote_url is not None and remote is None:
-            remote = 'origin'
-            print(f'USER WARNING :: Only `remote_url` specified. Defaulting remote to {remote}.')
-        if remote_url is not None:
-            remote_url = configure_remote_with_auth(remote_url, auth)
-            self.repo.create_remote(remote, remote_url)
+            self.remote = 'origin'
+            print(f'USER WARNING :: Only `remote_url` specified. Defaulting remote to {self.remote}.')
+        if remote_url is not None and self.remote not in self.repo.remotes:
+            if auth is not None:
+                remote_url = configure_remote_with_auth(remote_url, auth)
+            self.repo.create_remote(self.remote, remote_url)
 
-    def commit(self, paths: Sequence[str]):
-        self.repo.index.add(paths)
-        changed_files = ', '.join([path for path in paths])
-        self.repo.index.commit(f'Committing changes for {changed_files}.')
+    def rm_cached(self):
+        self.repo.git.rm('--cached', '-r', self.repo.working_dir)
+
+    def add_commit(self):
+        untracked_files = self.repo.untracked_files
+        self.repo.git.add(all=True)
+        changed_files = ', '.join([ufile for ufile in untracked_files])
+        self.repo.index.commit(f'Committing changes for: {changed_files}.')
 
     def push(self):
-        remote = self.repo.remote()
-        remote.push()
+        remote = self.repo.remote(self.remote)
+        remote.push(refspec=f'{self.active_branch}:{remote.name}')
+
+    @property
+    def active_branch(self):
+        return self.repo.active_branch
 
     def __enter__(self):
         return self.repo
