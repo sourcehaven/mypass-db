@@ -72,9 +72,12 @@ class GitRepoBase:
 
     def add_commit(self):
         untracked_files = self.repo.untracked_files
+        diffs = self.repo.index.diff(None)
+        diff_files = [diff.a_path for diff in diffs]  # TODO: should store change type?
+        changed_files = untracked_files + diff_files
         self.repo.git.add(all=True)
-        changed_files = ', '.join([ufile for ufile in untracked_files])
-        self.repo.index.commit(f'Committing changes for: {changed_files}.')
+        changed_files_repr = ', '.join([ufile for ufile in changed_files])
+        self.repo.index.commit(f'Committing changes for: {changed_files_repr}.')
 
     def push(self):
         remote = self.repo.remote(self.remote)
