@@ -1,2 +1,2 @@
-from .local import LocalGitRepo
-from .github import GitHubRepo
+from .repository import GitRepository
+from ._impl import MasterGitRepository, VaultGitRepository
