@@ -45,7 +45,7 @@ class MasterDbSupport:
         Creates a master vault entry.
 
         Returns:
-            The newly created id.
+            str | int: The newly created id.
         Raises:
             MasterPasswordExistsError: Raises only if the user already exists in master vault.
         """
@@ -86,8 +86,8 @@ class MasterDbSupport:
             TypeError: Only if param user_or_uid is not an accepted user
         """
 
-        if 'user' in update or 'token' in update:
-            raise InvalidUpdateError('User and master token cannot be updated inside master vault.')
+        if 'user' in update:
+            raise InvalidUpdateError('User cannot be updated inside master vault.')
         if isinstance(__uid, self.repo.id_cls):
             item = self.repo.update_by_id(__uid, update=update)
             if item is None:

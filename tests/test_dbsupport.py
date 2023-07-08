@@ -68,8 +68,6 @@ class MasterDbSupportTester(abc.ABC):
             object(), MasterEntity(pw='dummy'))
         assert_that(self.dbsupport.update_master_password).raises(InvalidUpdateError).when_called_with(
             self.objects[1].id, MasterEntity(user='invalid', pw='dummy'))
-        assert_that(self.dbsupport.update_master_password).raises(InvalidUpdateError).when_called_with(
-            self.objects[0].id, MasterEntity(token='invalid', pw='dummy'))
 
     @pytest.mark.dependency(depends=['self::test_update'])
     def test_records_after_update(self):
