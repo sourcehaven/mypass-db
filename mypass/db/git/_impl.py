@@ -4,9 +4,9 @@ from mypass.types import MasterEntity, VaultEntity
 from .repository import GitRepository
 
 
-class MasterGitRepository(GitRepository[Any, MasterEntity]):
+class MasterGitRepository(GitRepository[int | str, MasterEntity]):
     pass
 
 
-class VaultGitRepository(GitRepository[Any, VaultEntity]):
+class VaultGitRepository(GitRepository[int | str, VaultEntity]):
     pass

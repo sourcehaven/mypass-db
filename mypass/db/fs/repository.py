@@ -1,13 +1,11 @@
 from functools import wraps
 from os import PathLike
 from pathlib import Path
-
 from typing import Iterable, Optional, Generic, TypeVar, Mapping
 
 from mypass.db import CrudRepository
 from mypass.exceptions import RequiresIdError
 from mypass.types.entity import Entity
-
 from .dao import FileSystemDao
 
 _PATH = TypeVar('_PATH', bound=str)
@@ -15,7 +13,6 @@ _T = TypeVar('_T', bound=Mapping)
 
 
 def requires_id(f):
-
     def wrapper(self, entity, *args, **kwargs):
         if entity.id:
             return f(self, entity, *args, **kwargs)
@@ -49,6 +46,7 @@ def full_path(entity=False):
             return fun(self, path, *args, **kwargs)
 
         return entity_wrapper if entity else path_wrapper
+
     return func_dec
 
 
@@ -90,6 +88,10 @@ class FileSystemRepository(CrudRepository, Generic[_PATH, _T]):
     def find(self, paths: Iterable[_PATH], crit: _T) -> Iterable[_T]:
         paths = self.dao.find(paths, crit=crit)
         return self.dao.read(paths, into=self.entity_cls)
+
+    def find_all(self) -> Iterable[_T]:
+        # TODO: implement method
+        raise NotImplementedError()
 
     @full_path()
     def update_by_id(self, path: _PATH, update: _T) -> Optional[_PATH]:

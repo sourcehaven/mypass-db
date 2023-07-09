@@ -59,6 +59,7 @@ class CrudRepository(abc.ABC, Generic[_ID, _T]):
         """Finds multiple documents based on their ids and a given criteria, and returns them in an iterable."""
         ...
 
+    @abc.abstractmethod
     def find_all(self) -> Iterable[_T]:
         """Finds all documents, and returns them in an iterable."""
         ...
