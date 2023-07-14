@@ -8,54 +8,60 @@ from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import utils
 from mypass.db import MasterDbSupport, VaultDbSupport
-from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError
-from mypass.types import MasterEntity
-from ._utils import clear_special_keys
+from mypass.exceptions import MasterPasswordExistsError, MultipleMasterPasswordsError, EmptyRecordInsertionError, \
+    RecordNotFoundError
+from mypass.types import MasterEntity, VaultEntity
 
 # TODO: Should all _write_ endpoints need fresh=True token?
-TinyDbApi = Blueprint('tinydb', __name__)
+DbApi = Blueprint('db', __name__)
 
 
 def _db_error_handler(err):
     return {'msg': f'{err.__class__.__name__} :: {err}'}, 500
 
 
-@TinyDbApi.errorhandler(MasterPasswordExistsError)
+@DbApi.errorhandler(MasterPasswordExistsError)
 def master_password_exists_handler(err):
     return _db_error_handler(err)
 
 
-@TinyDbApi.errorhandler(MultipleMasterPasswordsError)
+@DbApi.errorhandler(MultipleMasterPasswordsError)
 def multiple_master_passwords_handler(err):
     return _db_error_handler(err)
 
 
-@TinyDbApi.errorhandler(EmptyRecordInsertionError)
+@DbApi.errorhandler(EmptyRecordInsertionError)
 def empty_record_insertion_handler(err):
     return _db_error_handler(err)
 
 
-@TinyDbApi.route('/api/db/master/create', methods=['POST'])
+@DbApi.errorhandler(RecordNotFoundError)
+def record_not_found_handler(err):
+    return {'msg': f'{err.__class__.__name__} :: {err}'}, 404
+
+
+@DbApi.route('/api/db/master/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def create_master_pw():
     controller: MasterDbSupport = flask.current_app.config['master_controller']
-    request_obj = request.json
+    request_obj = dict(request.json)
     logging.getLogger().debug(f'Creating master password with params\n    {request_obj}')
+    entity_id = request_obj.get('id', None)
     user, token, pw, salt = request_obj['user'], request_obj['token'], request_obj['pw'], request_obj['salt']
-    entity = MasterEntity(user=user, token=token, pw=pw, salt=salt)
+    entity = MasterEntity(entity_id, user=user, token=token, pw=pw, salt=salt)
     entity_id = controller.create_master_password(entity)
     logging.getLogger().debug(f'Created master password with id: {entity_id}')
     return {'id': entity_id}, 201
 
 
-@TinyDbApi.route('/api/db/master/read', methods=['POST'])
+@DbApi.route('/api/db/master/read', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_master_pw():
     controller: MasterDbSupport = flask.current_app.config['master_controller']
-    request_obj = request.json
+    request_obj = dict(request.json)
     logging.getLogger().debug(f'Reading master password with params\n    {request_obj}')
-    user = request_obj.pop('user', None)
-    uid = request_obj.pop('uid', None)
+    user = request_obj.get('user', None)
+    uid = request_obj.get('uid', None)
     if user is None and uid is None:
         return {'msg': 'BAD REQUEST :: You should specify at least one of `user` or `uid` in the request'}, 400
     # user value will only be used if uid is not provided
@@ -66,7 +72,7 @@ def query_master_pw():
     return {'pw': pw}, 200
 
 
-@TinyDbApi.route('/api/db/master/update', methods=['POST'])
+@DbApi.route('/api/db/master/update', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def update_master_pw():
     controller: MasterDbSupport = flask.current_app.config['master_controller']
@@ -78,92 +84,79 @@ def update_master_pw():
     return {'id': entity_id}, 200
 
 
-@TinyDbApi.route('/api/db/vault/create', methods=['POST'])
+@DbApi.route('/api/db/vault/create', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def new_vault_entry():
     controller: VaultDbSupport = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
     logging.getLogger().debug(f'Creating password inside user vault with params\n    {request_obj}')
-    # see if the main user is passed along the request
-    uid = request_obj.pop('uid', None)
-    fields = request_obj.pop('fields', None)
+    entity_id = request_obj.get('id', None)
+    uid = request_obj.get('uid', None)
+    fields = request_obj.get('fields', None)
     if fields is not None:
         fields = fields.copy()
-    # clearn every other unhandled special items, except salt
-    # TODO: need configurable whitelist?
-    fields = clear_special_keys(fields, whitelist=['_salt'])
-    doc_id = controller.create_vault_entry(uid, **fields)
-    logging.getLogger().debug(f'Created password inside vault with id: {doc_id}')
-    return {'_id': doc_id}, 201
+    entity = VaultEntity(entity_id, **fields)
+    entity_id = controller.create_vault_entry(uid, entity=entity)
+    logging.getLogger().debug(f'Created password inside vault with id: {entity_id}')
+    return {'id': entity_id}, 201
 
 
-@TinyDbApi.route('/api/db/vault/read', methods=['POST'])
+@DbApi.route('/api/db/vault/read', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def query_vault_entry():
     controller: VaultDbSupport = flask.current_app.config['vault_controller']
     try:
         request_obj = dict(request.json)
-        doc_id = request_obj.pop('_id', None)
-        doc_ids = request_obj.pop('_ids', None)
-        uid = request_obj.pop('uid', None)
-        cond = request_obj.pop('cond', None)
+        pk = request_obj.get('id', None)
+        pks = request_obj.get('ids', None)
+        uid = request_obj.get('uid', None)
+        crit = request_obj.get('crit', None)
 
-        if doc_id is not None:
-            document: dict = controller.read_vault_entry(uid, doc_id=doc_id, cond=cond)
-            if document is not None:
-                return document, 200
-            return {
-                'msg': 'NOT FOUND :: Requested password cannot be read, as it does not exists.',
-                '_id': doc_id, 'cond': cond}, 404
-        documents = controller.read_vault_entries(uid, cond=cond, doc_ids=doc_ids)
+        if pk is not None:
+            entity = controller.read_vault_entry(uid, crit=crit, pk=pk)
+            entity_dict = utils.entity_as_dict(entity, keep_id=True, remove_special=False)
+            return entity_dict, 200
+        if pks is not None or crit is not None:
+            entities = controller.read_vault_entries(uid, crit=crit, pks=pks)
+            entities_dict = utils.entities_as_dict(entities, keep_id=True, remove_special=False)
+            return entities_dict, 200
     except UnsupportedMediaType:
-        documents = controller.read_vault_entries()
-    return documents, 200
+        entities = controller.read_vault_entries()
+        entities_dict = utils.entities_as_dict(entities, keep_id=True, remove_special=False)
+        return entities_dict, 200
 
 
-@TinyDbApi.route('/api/db/vault/update', methods=['POST'])
+@DbApi.route('/api/db/vault/update', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def change_vault_entry():
     controller: VaultDbSupport = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
-    doc_id = request_obj.pop('_id', None)
-    doc_ids = request_obj.pop('_ids', None)
-    uid = request_obj.pop('uid', None)
-    cond = request_obj.pop('cond', None)
-    remove_keys = request_obj.pop('remove_keys', None)
-    fields = request_obj.pop('fields', None)
-    if fields is not None:
-        fields = utils.clear_special_keys(fields)
+    pk = request_obj.get('id', None)
+    pks = request_obj.get('ids', None)
+    uid = request_obj.get('uid', None)
+    crit = request_obj.get('crit', None)
+    fields = request_obj.get('fields', None)
 
-    if doc_id is not None:
-        updated_id: int = controller.update_vault_entry(
-            uid, fields=fields, doc_id=doc_id, cond=cond, remove_keys=remove_keys)
-        if updated_id is not None:
-            return {'_id': updated_id}, 200
-        return {
-            'msg': 'NOT FOUND :: Requested password update cannot be done, as it does not exists.',
-            '_id': doc_id, 'cond': cond}, 404
-    updated_ids = controller.update_vault_entries(
-        uid, fields=fields, cond=cond, doc_ids=doc_ids, remove_keys=remove_keys)
-    return {'_ids': updated_ids}, 200
+    update = VaultEntity(**fields)
+    if pk is not None:
+        entity_id = controller.update_vault_entry(uid, update=update, pk=pk)
+        return {'id': entity_id}, 200
+    entity_ids = controller.update_vault_entries(uid, update=update, crit=crit, pks=pks)
+    return [{'id': e_id} for e_id in entity_ids], 200
 
 
-@TinyDbApi.route('/api/db/vault/delete', methods=['POST'])
+@DbApi.route('/api/db/vault/delete', methods=['POST'])
 @jwt_required(optional=bool(int(os.environ.get('MYPASS_OPTIONAL_JWT_CHECKS', 0))))
 def remove_vault_entry():
     controller: VaultDbSupport = flask.current_app.config['vault_controller']
     request_obj = dict(request.json)
-    doc_id = request_obj.pop('_id', None)
-    doc_ids = request_obj.pop('_ids', None)
-    uid = request_obj.pop('uid', None)
-    cond = request_obj.pop('cond', None)
+    pk = request_obj.get('id', None)
+    pks = request_obj.get('ids', None)
+    uid = request_obj.get('uid', None)
+    crit = request_obj.get('crit', None)
 
-    if doc_id is not None:
-        deleted_id: int = controller.delete_vault_entry(uid, doc_id=doc_id, cond=cond)
-        if deleted_id is not None:
-            return {'_id': deleted_id}, 200
-        return {
-            'msg': 'NOT FOUND :: Requested password cannot be deleted, as it does not exists.',
-            '_id': doc_id, 'cond': cond}, 404
-    deleted_ids = controller.delete_vault_entries(uid, cond=cond, doc_ids=doc_ids)
-    return {'_ids': deleted_ids}, 200
+    if pk is not None:
+        entity_id = controller.delete_vault_entry(uid, pk=pk)
+        return {'id': entity_id}, 200
+    entity_ids = controller.delete_vault_entries(uid, crit=crit, pks=pks)
+    return [{'id': e_id} for e_id in entity_ids], 200

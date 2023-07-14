@@ -9,7 +9,7 @@ from flask_jwt_extended import JWTManager
 from werkzeug.exceptions import UnsupportedMediaType
 
 from mypass import hooks
-from mypass.api import AuthApi, TinyDbApi
+from mypass.api import AuthApi, DbApi
 from mypass.db import MasterDbSupport, VaultDbSupport
 from mypass.db.tiny import VaultTinyRepository, MasterTinyRepository
 from mypass.utils import hash_fn
@@ -45,7 +45,7 @@ def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
 
     # register api endpoints
     app.register_blueprint(AuthApi)
-    app.register_blueprint(TinyDbApi)
+    app.register_blueprint(DbApi)
 
     app.register_error_handler(UnsupportedMediaType, hooks.unsupported_media_type_handler)
     app.register_error_handler(Exception, hooks.base_error_handler)

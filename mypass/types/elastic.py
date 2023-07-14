@@ -28,7 +28,7 @@ class ElasticClass(Mapping):
         try:
             return getattr(self, __item)
         except AttributeError:
-            return None
+            raise KeyError(f'{__item} is not present inside {self.__class__.__name__}')
 
     def __setitem__(self, __key, __value):
         setattr(self, __key, __value)

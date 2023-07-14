@@ -10,8 +10,6 @@ from mypass.utils import hash_fn
 
 AuthApi = Blueprint('auth', __name__)
 
-__STATE = {'logged_in': False}
-
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
 def login():
@@ -50,7 +48,6 @@ def logout():
         jti = get_jwt()['jti']
         logging.getLogger().debug(f'Blacklisting token: {jti}.')
         blacklist.add(jti)
-        # __STATE['logged_in'] = False
         return '', 204
     except KeyError:
         return '', 409

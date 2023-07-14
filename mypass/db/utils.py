@@ -76,14 +76,14 @@ class MasterDbSupport:
             return item.pw
         raise TypeError(f'Parameter __uid should be of type {self.repo.id_cls}.')
 
-    def update_master_password(self, __uid, update: MasterEntity):
+    def update_master_password(self, __uid: int | str, update: MasterEntity):
         """
         Updates master password for a given user id.
 
         Returns:
             str | int: Updated id.
         Raises:
-            TypeError: Only if param user_or_uid is not an accepted user
+            TypeError: Only if param __uid is not an accepted user id.
         """
 
         if 'user' in update:
@@ -123,7 +123,7 @@ class VaultDbSupport:
             entity.id = gen_uuid(self.repo.id_cls.__class__.__name__)
             return self.repo.create(entity=entity)
 
-    def read_vault_entry(self, __uid=None, *, crit: VaultEntity = None, pk: Any = None):
+    def read_vault_entry(self, __uid=None, *, crit: VaultEntity = None, pk: int | str = None):
         """
         Reads an entry from password vault.
         If given, special UID field will be inserted inside entity criteria.
@@ -146,7 +146,7 @@ class VaultDbSupport:
             crit[const.UID_FIELD] = __uid
         if pk is not None:
             item = self.repo.find_by_id(pk)
-            if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
+            if item is None or (__uid is not None and item.get(const.UID_FIELD, None) != __uid):
                 raise RecordNotFoundError(f'Requested record with criteria {crit} and pk {pk} not found.')
             return item
         item = self.repo.find_one(crit)
@@ -154,7 +154,7 @@ class VaultDbSupport:
             raise RecordNotFoundError(f'Requested record with criteria {crit} not found.')
         return item
 
-    def read_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable = None):
+    def read_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable[int | str] = None):
         """
         Reads multiple entries from password vault based on given conditions.
         If given, special UID field will be inserted inside entity criteria.
@@ -176,7 +176,7 @@ class VaultDbSupport:
         if crit is not None:
             return self.repo.find_by_crit(crit=crit)
 
-    def update_vault_entry(self, __uid=None, *, update: VaultEntity, pk: Any):
+    def update_vault_entry(self, __uid=None, *, update: VaultEntity, pk: int | str):
         """
         Updates entry based on given conditions and update object.
         If given, special UID field will be inserted inside entity criteria.
@@ -194,7 +194,7 @@ class VaultDbSupport:
             raise TypeError('Update object cannot contain a new user id field.')
 
         item = self.repo.find_by_id(pk)
-        if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
+        if item is None or (__uid is not None and item.get(const.UID_FIELD, None) != __uid):
             raise RecordNotFoundError(f'Requested record with pk {pk} not found.')
 
         item = self.repo.update_by_id(pk, update=update)
@@ -208,7 +208,7 @@ class VaultDbSupport:
             *,
             update: VaultEntity,
             crit: VaultEntity = None,
-            pks: Iterable = None
+            pks: Iterable[int | str] = None
     ):
         """
         Updates multiple entries from password vault based on given conditions.
@@ -238,7 +238,7 @@ class VaultDbSupport:
             return self.repo.update_by_ids(pks, update=update)
         return self.repo.update_all(update)
 
-    def delete_vault_entry(self, __uid=None, *, pk: Any):
+    def delete_vault_entry(self, __uid=None, *, pk: int | str):
         """
         Deletes a single vault entry.
 
@@ -249,11 +249,11 @@ class VaultDbSupport:
             RecordNotFoundError: If requested record to be deleted does not exist.
         """
         item = self.repo.find_by_id(pk)
-        if item is None or (__uid is not None and item[const.UID_FIELD] != __uid):
+        if item is None or (__uid is not None and item.get(const.UID_FIELD, None) != __uid):
             raise RecordNotFoundError(f'Requested record with pk {pk} not found.')
         return self.repo.remove_by_id(pk)
 
-    def delete_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable = None):
+    def delete_vault_entries(self, __uid=None, *, crit: VaultEntity = None, pks: Iterable[int | str] = None):
         """
         Deletes multiple entries from vault based on given conditions.
 
