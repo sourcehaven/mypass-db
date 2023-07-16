@@ -5,3 +5,6 @@ venv
 .db
 .reports
 .coverage
+build
+dist
+*.egg-info
