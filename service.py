@@ -1,13 +1,20 @@
+import logging
 from argparse import ArgumentParser, Namespace
 from datetime import timedelta
+from pathlib import Path
 
 import waitress
 from flask import Flask
 from flask_jwt_extended import JWTManager
+from werkzeug.exceptions import UnsupportedMediaType
 
-from mypass.api import AuthApi
+from mypass import hooks
+from mypass.api import AuthApi, DbApi
+from mypass.db import MasterDbSupport, VaultDbSupport
+from mypass.db.tiny import VaultTinyRepository, MasterTinyRepository
+from mypass.utils import hash_fn
 
-HOST = '0.0.0.0'
+HOST = 'localhost'
 PORT = 5758
 JWT_KEY = 'sourcehaven-db'
 
@@ -17,20 +24,39 @@ class MyPassArgs(Namespace):
     host: str
     port: int
     jwt_key: str
+    api_key: str
 
 
-def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY):
+def run(debug=False, host=HOST, port=PORT, jwt_key=JWT_KEY, api_key=None):
+    db_path = Path.home().joinpath('.mypass', 'db', 'tinydb', 'db.json')
+
+    if api_key is not None:
+        api_key = hash_fn(api_key)
+
     app = Flask(__name__)
-    app.register_blueprint(AuthApi)
-
     app.config['JWT_SECRET_KEY'] = jwt_key
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=10)
-    JWTManager(app)
+    app.config['JWT_BLACKLIST_ENABLED'] = True
+    app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
+    app.config['API_KEY'] = api_key
+    app.config['master_controller'] = MasterDbSupport(repo=MasterTinyRepository(path=db_path))
+    app.config['vault_controller'] = VaultDbSupport(repo=VaultTinyRepository(path=db_path))
+    app.config.from_object(__name__)
+
+    # register api endpoints
+    app.register_blueprint(AuthApi)
+    app.register_blueprint(DbApi)
+
+    app.register_error_handler(UnsupportedMediaType, hooks.unsupported_media_type_handler)
+    app.register_error_handler(Exception, hooks.base_error_handler)
+
+    jwt = JWTManager(app)
+    jwt.token_in_blocklist_loader(hooks.check_if_token_in_blacklist)
 
     if debug:
         app.run(host=host, port=port, debug=True)
     else:
-        waitress.serve(app, host=host, port=port, channel_timeout=10, threads=1)
+        waitress.serve(app, host=host, port=port, channel_timeout=10, threads=8)
 
 
 if __name__ == '__main__':
@@ -47,6 +73,13 @@ if __name__ == '__main__':
     arg_parser.add_argument(
         '-k', '--jwt-key', type=str, default=JWT_KEY,
         help=f'specifies the secret jwt key by the application, defaults to "{JWT_KEY}" (should be changed)')
+    arg_parser.add_argument(
+        '-P', '--api-key', type=str, default=None,
+        help=f'specifies the secret api key by the application, defaults to "{None}" (should be set)')
 
     args = arg_parser.parse_args(namespace=MyPassArgs)
-    run(debug=args.debug, host=args.host, port=args.port, jwt_key=args.jwt_key)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
+    run(debug=args.debug, host=args.host, port=args.port, jwt_key=args.jwt_key, api_key=args.api_key)
