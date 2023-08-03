@@ -102,19 +102,3 @@ class TinyRepository(CrudRepository, Generic[_ID, _T]):
 
     def remove_all(self):
         self.dao.delete_all()
-
-
-if __name__ == '__main__':
-    class Dog:
-        table = 'dogs'
-
-        def __init__(self):
-            self.name = 'name'
-            self.tag = 52
-
-
-    class MyRepo(TinyRepository[int, Dog]):
-        pass
-
-
-    repo = MyRepo()
